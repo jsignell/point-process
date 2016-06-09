@@ -6,6 +6,26 @@ from cartopy.io.srtm import SRTM3Source
 import matplotlib.pyplot as plt
 import numpy as np
 
+def background_scale(ax, scale='110m'):
+    '''
+    Add standard background features to geoAxes object
+    '''
+    states = cfeature.NaturalEarthFeature(category='cultural',
+                                          name='admin_1_states_provinces_lines',
+                                          scale=scale,
+                                          facecolor='none')
+    ocean = cfeature.NaturalEarthFeature('physical', 'ocean', scale,
+                                         edgecolor='None', facecolor=cfeature.COLORS['water'])
+    coast = cfeature.NaturalEarthFeature('physical', 'coastline', scale,
+                                         edgecolor='k', facecolor='None')
+    ax.add_feature(ocean, zorder=4)
+    ax.add_feature(coast, zorder=6)   
+    ax.add_feature(states, zorder=7)
+    gl = ax.gridlines(draw_labels=True, zorder=3)
+    gl.xlabels_top = False
+    gl.ylabels_right = False
+    return(ax)
+
 def background(ax):
     '''
     Add standard background features to geoAxes object
@@ -14,11 +34,12 @@ def background(ax):
                                           name='admin_1_states_provinces_lines',
                                           scale='10m',
                                           facecolor='none')
-    ax.add_feature(cfeature.OCEAN, zorder=5)
+    ax.add_feature(cfeature.OCEAN, zorder=4)
     ax.add_feature(cfeature.COASTLINE, zorder=6)
-    ax.add_feature(cfeature.BORDERS, zorder=7)
+    
+    ax.add_feature(cfeature.BORDERS, zorder=7)     
     ax.add_feature(states, zorder=8)
-    gl = ax.gridlines(draw_labels=True)
+    gl = ax.gridlines(draw_labels=True, zorder=3)
     gl.xlabels_top = False
     gl.ylabels_right = False
     return(ax)
@@ -65,6 +86,7 @@ def dem(ax, dem_cbar=False):
                        vmin=level[1]* np.floor_divide(elev.min(), level[1]),
                        vmax=level[1]* np.floor_divide(elev.max(), level[1]))
     dem = ax.imshow(elev, extent=extent, transform=crs, origin='lower', **plot_kwargs)
+    ax.set_extent([x0, xn, y0, yn])
     if dem_cbar:
         plt.colorbar(dem, ax=ax, ticks=range(int(plot_kwargs['vmin']), int(plot_kwargs['vmax']), level[1]), 
                      orientation='horizontal');
@@ -76,7 +98,7 @@ def urban(ax, **kwargs):
                                          scale='10m',
                                          edgecolor='red', 
                                          facecolor='None')
-    ax.add_feature(urban, zorder=9, **kwargs)
+    ax.add_feature(urban, zorder=10, **kwargs)
     return(ax)
 
 def choose_cmap(pos, neg):

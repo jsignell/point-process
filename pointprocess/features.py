@@ -17,7 +17,7 @@ class Features:
         radii, _ = np.histogram(p[:,:,'Bearing'].unstack().dropna().values, bins=N)
         width = (2*np.pi) / N
 
-        bars = ax.bar(theta, radii, width=width)
+        bars = ax.bar(theta, radii, width=width, bottom=bottom)
         ax.set_theta_zero_location("N")
         ax.set_theta_direction(-1)
 
