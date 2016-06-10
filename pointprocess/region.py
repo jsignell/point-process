@@ -4,6 +4,7 @@ import pandas as pd
 import xarray as xr
 from plotting import *
 from common import *
+from databox import DataBox
 
 class Region:
     '''    
@@ -318,6 +319,10 @@ class Region:
             plt.colorbar(im, ax=ax)
         return im, ax
     
+    def to_databox(self, box, tr):
+        lon, lat = np.meshgrid(self.gridx[0:-1], self.gridy[0:-1])
+        return(DataBox(tr, lat, lon, box))
+               
     # def add_buffer(self, p):
     #     from geopy.distance import vincenty
 

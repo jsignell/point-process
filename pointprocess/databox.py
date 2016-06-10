@@ -3,19 +3,36 @@ import pandas as pd
 from common import *
 
 class DataBox:
-    def __init__(time, lat, lon, box):
-    	nt, ny, nx = box.shape
-    	if time.shape == nt:
-    		self.time = time
-    	if lat.shape == ny:
-    		self.lon, self.lat = np.meshgrid(lon, lat)
-    	elif lat.shape == (ny, nx):
-	    	self.lat = lat
-    		self.lon = lon
-    	self.box = box
+    def __init__(self, time, lat, lon, box):
+        nt, ny, nx = box.shape
+        if time.shape == nt or len(time) == nt:
+            self.time = time
+        else:
+            print('check time')
+        if lat.shape == (ny, nx):
+            self.lat = lat
+            self.lon = lon
+        else:
+            print('check lat, lon')
+        self.box = box
 
     def show(self):
-    	print('DataBox of shape: {shape}'.format(shape=self.box.shape)
+        print('DataBox of shape: {shape}'.format(shape=self.box.shape))
+    
+    def flat_plot(self):
+        import matplotlib.pyplot as plt
+        
+        fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(16,4))
+
+        axes[0].plot(np.sum(self.box, axis=(1,2)))
+        axes[0].set_title("Flattened t axis");
+
+        axes[1].plot(np.sum(self.box, axis=(0,2)))
+        axes[1].set_title("Flattened y axis")
+
+        axes[2].plot(np.sum(self.box, axis=(0,1)))
+        axes[2].set_title("Flattened x axis")
+        return(fig)
 
     def add_buffer(self, p):
         from geopy.distance import vincenty
@@ -52,7 +69,7 @@ class DataBox:
 
         Return
         ------
-		p: pd.Panel containing parameters characterizing the features found
+        p: pd.Panel containing parameters characterizing the features found
         '''
         from rpy2 import robjects 
         from rpy2.robjects.packages import importr
@@ -62,12 +79,10 @@ class DataBox:
         rsummary = robjects.r.summary
         r_tools = import_r_tools()
 
-        if return_d:
-
-        ll = np.array([X.flatten('F'), Y.flatten('F')]).T
-        for i in range(box.shape[0]-1):
+        ll = np.array([self.lon.flatten('F'), self.lat.flatten('F')]).T
+        for i in range(self.box.shape[0]-1):
             hold = SpatialVx.make_SpatialVx(self.box[i,:,:], self.box[i+1,:,:], loc=ll)
-            look = r_tools.FeatureFinder_gaussian(hold, nx=box.shape[2], ny=box.shape[1], 
+            look = r_tools.FeatureFinder_gaussian(hold, nx=self.box.shape[2], ny=self.box.shape[1], 
                                                   thresh=thresh, smoothpar=sigma, **(dotvars(min_size=min_size)))
             try:
                 x = rsummary(look, silent=True)[0]
