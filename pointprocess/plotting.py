@@ -111,3 +111,32 @@ def choose_cmap(pos, neg):
     elif neg and pos:
         cmap="RdBu_r"
     return(cmap)
+
+def plot_grid(lat, lon, box, ax=None, cbar=False, interpolation='None', **kwargs):
+    '''
+    Simple and fast plot generation for gridded data **MUST BE RECTANGULAR**
+
+    Parameters
+    ----------
+    grid: np.array with shape matching gridx by gridy
+    ax: matplotlib axes object, if not given generates and populates with basic map
+    cbar: bool indicating whether or not to show default colorbar
+    **kwargs: fed directly into ax.imshow()
+
+    Returns
+    -------
+    im, ax: (output from ax.imshow, matplotlib axes object)
+
+    Benchmarking
+    ------------
+    33.8 ms for 600x600
+    32.9 ms for 60x60
+    '''     
+    if ax is None:
+        ax = background(plt.axes(projection=ccrs.PlateCarree()))
+    im = ax.imshow(box, interpolation=interpolation,
+                   extent=[lon.min(), lon.max(), lat.min(), lat.max()], 
+                   **kwargs)
+    if cbar:
+        plt.colorbar(im, ax=ax)
+    return(im, ax)

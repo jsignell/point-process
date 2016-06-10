@@ -14,7 +14,6 @@ class Features:
     def __init__(self, p, databox=None):
         self.p = p
         self.databox = databox
-        return(self)
 
     def bearing_plot(self, ax=None, N=16, bottom=0):
         p = self.p
@@ -36,13 +35,13 @@ class Features:
             bar.set_alpha(0.8)
         return(ax)
 
-    def get_storm_tracks(self):
+    def get_storm_tracks(self, time=None):
         p = self.p
         tracks = []
         for it in range(p.shape[0]-1):
             try:
-                df0 = p[tr[it],:,['centroidX', 'centroidY', 'Forecast']].dropna()
-                df1 = p[tr[it+1],:,['centroidX', 'centroidY', 'Observed']].dropna()
+                df0 = p[self.databox.time[it],:,['centroidX', 'centroidY', 'Forecast']].dropna()
+                df1 = p[self.databox.time[it+1],:,['centroidX', 'centroidY', 'Observed']].dropna()
             except:
                 continue
             df0.index = df0['Forecast']
@@ -53,7 +52,7 @@ class Features:
 
     def plot_storm_tracks(self, ax):
         p = self.p
-        tracks = get_storm_tracks(p)
+        tracks = self.get_storm_tracks()
         for i in range(len(tracks)-1):
             for ifeat in range(tracks[i].shape[0]):
                 ax.plot(tracks[i].iloc[ifeat,[0,3]].values, tracks[i].iloc[ifeat,[1,4]].values, c='red', zorder=10)

@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from common import *
+from plotting import *
 
 class DataBox:
     def __init__(self, time, lat, lon, box):
@@ -33,7 +34,36 @@ class DataBox:
         axes[2].plot(np.sum(self.box, axis=(0,1)))
         axes[2].set_title("Flattened x axis")
         return(fig)
-
+    
+    def plot_grid(self, grid=None, **kwargs):
+        '''
+        Simple and fast plot generation for gridded data
+        
+        Parameters
+        ----------
+        grid: np.array with shape matching self.lat
+        ax: matplotlib axes object, if not given generates and populates with basic map
+        cbar: bool indicating whether or not to show default colorbar
+        **kwargs: fed directly into ax.imshow()
+        
+        Returns
+        -------
+        im, ax: (output from ax.imshow, matplotlib axes object)
+        
+        Benchmarking
+        ------------
+        33.8 ms for 600x600
+        32.9 ms for 60x60
+        '''
+        if not grid:
+            grid = np.nansum(self.box, axis=0)
+        return(plot_grid(self.lat, self.lon, grid, **kwargs))
+    
+    def get_gauss2d(self, sigma=3):
+        from scipy import ndimage
+        gauss2d = np.array([ndimage.filters.gaussian_filter(self.box[i,:,:], sigma) for i in range(self.box.shape[0])])
+        return(gauss2d)
+    
     def add_buffer(self, p):
         from geopy.distance import vincenty
 

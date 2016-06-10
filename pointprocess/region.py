@@ -290,7 +290,7 @@ class Region:
         s = pd.Series(d).sort_values(ascending=False).head(n) 
         return s
           
-    def plot_grid(self, grid, cmap, ax=None, cbar=False, interpolation='None', **kwargs):
+    def plot_grid(self, grid, **kwargs):
         '''
         Simple and fast plot generation for gridded data
         
@@ -310,14 +310,7 @@ class Region:
         33.8 ms for 600x600
         32.9 ms for 60x60
         '''     
-        if ax is None:
-            ax = background(plt.axes(projection=ccrs.PlateCarree()))
-        im = ax.imshow(grid, cmap=cmap, interpolation=interpolation,
-                       extent=[self.gridx.min(), self.gridx.max(), self.gridy.min(), self.gridy.max()], 
-                       **kwargs)
-        if cbar:
-            plt.colorbar(im, ax=ax)
-        return im, ax
+        return(plot_grid(self.gridy, self.gridx, grid, **kwargs))
     
     def to_databox(self, box, tr):
         lon, lat = np.meshgrid(self.gridx[0:-1], self.gridy[0:-1])
