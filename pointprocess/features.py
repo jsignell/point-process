@@ -3,11 +3,20 @@ import pandas as pd
 import numpy as np
 
 class Features:
-    def __init__(self, p, c=None):
-        self.p = p
-        self.c = c
+    '''
+    Parameters
+    ----------
+    p: pandas.Panel containing properties about all of the features and how they are matched
+    databox: optional - a DataBox object with attributes: time, lat, lon, and box
 
-    def bearing_plot(self, ax=None, N=16, bottom=8):
+    Return 
+    '''
+    def __init__(self, p, databox=None):
+        self.p = p
+        self.databox = databox
+        return(self)
+
+    def bearing_plot(self, ax=None, N=16, bottom=0):
         p = self.p
         if ax is None:
             ax = plt.subplot(111, polar=True)
@@ -126,7 +135,7 @@ class Features:
         elif neg and pos:
             return(pos_lon, pos_lat, neg_lon, neg_lat, np.mean(dist))
 
-    def plot_kde(self, pos, neg, metrics=['area', 'Intensity0.9', 'Intensity0.25'], **kwargs):
+    def plot_kde(self, pos, neg, lon=None, lat=None, metrics=['area', 'Intensity0.9', 'Intensity0.25'], **kwargs):
         import cartopy.crs as ccrs
         from plotting import choose_cmap, background, urban
         fig = plt.figure(figsize=(12,8))
@@ -135,14 +144,21 @@ class Features:
             ax = plt.subplot(2, 2, b[4], projection=ccrs.PlateCarree())
             if pos and neg:
                 pos_lon, pos_lat, neg_lon, neg_lat, dist = self.get_lon_lat(b, pos, neg, metrics=['area'])
-                xx, yy, pos_f = self.c.kde(pos_lon, pos_lat)    
-                xx, yy, neg_f = self.c.kde(neg_lon, neg_lat) 
+                if self.databox:
+                    xx, yy, pos_f = self.databox.kde(pos_lon, pos_lat)    
+                    xx, yy, neg_f = self.databox.kde(neg_lon, neg_lat) 
+                else:
+                    xx, yy, pos_f = kde(lon, lat, pos_lon, pos_lat)    
+                    xx, yy, neg_f = kde(lon, lat, neg_lon, neg_lat) 
                 f = (pos_f-neg_f)
                 flim = np.ceil(max(np.abs(f.min()), f.max()))
                 nfeats = pos_lon.shape[0]+neg_lon.shape[0]
             else:
-                lon, lat, dist = self.get_lon_lat(b, pos, neg, metrics)
-                xx, yy, f = self.c.kde(lon, lat)
+                _lon, _lat, dist = self.get_lon_lat(b, pos, neg, metrics)
+                if self.databox:
+                    xx, yy, f = self.databox.kde(_lon, _lat)
+                else:
+                    xx, yy, f = kde(lon, lat, _lon, _lat)
                 nfeats = lon.shape[0]
             cfset = ax.contourf(xx, yy, f, cmap=choose_cmap(pos, neg), zorder=3, **kwargs)
             background(ax)
@@ -153,3 +169,12 @@ class Features:
             CB = plt.colorbar(cfset, ax=ax) 
             axes.append(ax)
         return(fig)
+
+def kde(lon, lat, _lon, _lat):
+    import scipy.stats as st
+    xx, yy = lon, lat
+    positions = np.vstack([xx.ravel(), yy.ravel()])
+    values = np.vstack([_lon, _lat])
+    kernel = st.gaussian_kde(values)
+    f = np.reshape(kernel(positions).T, xx.shape)
+    return(xx,yy,f)    
