@@ -179,7 +179,23 @@ class Region:
             count = ds0.dims.values()[0]
             ds0.close()
             return(count)
+        
+        if func=='max':
+            self.set_x_y(ds0, filter_CG)
+            self.FC_grid = self.__to_grid()
+            ds0.close()
+            return(self.FC_grid.max())
+
         return(ds0)
+    
+    def area_over_thresh(self, thresh=[1,2,5], print_out=True, return_dict=False):
+        area = {}
+        for n in thresh:
+            area.update({n: (self.FC_grid>=n).sum()})
+        if print_out:
+            print('\n'.join(['Area exceeding {thresh} strikes: {area} km^2'.format(thresh=n, area=area[n]) for n in thresh]))
+        if return_dict:
+            return(area)
     
     def get_daily_grid_slices(self, t, base=12, **kwargs):
         '''

@@ -44,6 +44,12 @@ def background(ax):
     gl.ylabels_right = False
     return(ax)
 
+def pre_shaded(ax, fname, zorder=2):
+    img_extent = ([-180, 180, -90, 90])
+    img = plt.imread(fname)
+    ax.imshow(img, origin='upper', extent=img_extent, transform=ccrs.PlateCarree(), cmap='Greys_r', zorder=zorder)
+    return(ax)
+
 def shade(located_elevations):
     """
     Given an array of elevations in a LocatedImage, add a relief (shadows) to

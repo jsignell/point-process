@@ -19,15 +19,16 @@ class Features:
         p = self.p
         if ax is None:
             ax = plt.subplot(111, polar=True)
-        p[:,:,'Bearing'][p[:,:,'Bearing']<0] = p[:,:,'Bearing'][p[:,:,'Bearing']<0] + 360
+        bearing = p[:,:,'Bearing']
+        bearing[bearing<0] = bearing[bearing<0] + 360
 
         theta = np.linspace(0.0, 2 *np.pi, N, endpoint=False)
-        radii, _ = np.histogram(p[:,:,'Bearing'].unstack().dropna().values, bins=N)
+        radii, _ = np.histogram(bearing.unstack().dropna().values, bins=N)
         width = (2*np.pi) / N
 
         bars = ax.bar(theta, radii, width=width, bottom=bottom)
         ax.set_theta_zero_location("N")
-        ax.set_theta_direction(-1)
+        #ax.set_theta_direction(-1)
 
         # Use custom colors and opacity
         for r, bar in zip(radii, bars):
@@ -50,20 +51,20 @@ class Features:
             tracks.append(df)
         return(tracks)
 
-    def plot_storm_tracks(self, ax):
+    def plot_storm_tracks(self, ax, c='red', zorder=10):
         p = self.p
         tracks = self.get_storm_tracks()
         for i in range(len(tracks)-1):
             for ifeat in range(tracks[i].shape[0]):
-                ax.plot(tracks[i].iloc[ifeat,[0,3]].values, tracks[i].iloc[ifeat,[1,4]].values, c='red', zorder=10)
+                ax.plot(tracks[i].iloc[ifeat,[0,3]].values, tracks[i].iloc[ifeat,[1,4]].values, c=c, zorder=zorder)
         return(ax)
 
     def get_dirs4(self):
         p = self.p
-        ne = [0, 90, 'North East']
-        se = [90, 180, 'South East']
-        sw = [-180, -90, 'South West']
-        nw = [-90, 0, 'North West']
+        ne = [-90, 0, 'North East']
+        se = [-180, -90, 'South East']
+        sw = [90, 180, 'South West']
+        nw = [0, 90, 'North West']
         dirs4 = [nw, ne, sw, se]
         n = 1
         for b in dirs4:
@@ -73,6 +74,7 @@ class Features:
             n+=1
         self.dirs4 = dirs4
 
+    '''
     def get_dirs8(self):
         p = self.p
         n = [-15, 15, 'North']
@@ -97,6 +99,7 @@ class Features:
             b.append(n)
             n+=1
         self.dirs8 = dirs8
+    '''
 
     def get_lon_lat(self, b, pos=False, neg=False, metrics=['area', 'Intensity0.9', 'Intensity0.25']):
         p = self.p
@@ -158,7 +161,7 @@ class Features:
                     xx, yy, f = self.databox.kde(_lon, _lat)
                 else:
                     xx, yy, f = kde(lon, lat, _lon, _lat)
-                nfeats = lon.shape[0]
+                nfeats = _lon.shape[0]
             cfset = ax.contourf(xx, yy, f, cmap=choose_cmap(pos, neg), zorder=3, **kwargs)
             background(ax)
             urban(ax, facecolor='None', linewidth=2, edgecolor='red')
