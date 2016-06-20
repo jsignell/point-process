@@ -28,7 +28,7 @@ class Region:
             if hasattr(self, attr.upper()):
                 print('{a}: {val}'.format(a=attr, val=eval('self.'+attr.upper())))
         
-    def define_grid(self, nbins, extents=[], **kwargs):
+    def define_grid(self, nbins=None, step=.01, extents=[], **kwargs):
         if len(extents) > 0:
             minx, maxx, miny, maxy = extents
         else:
@@ -36,8 +36,12 @@ class Region:
             maxx = self.CENTER[1]+self.RADIUS
             miny = self.CENTER[0]-self.RADIUS
             maxy = self.CENTER[0]+self.RADIUS
-        self.gridx = np.linspace(minx, maxx, nbins)
-        self.gridy = np.linspace(miny, maxy, nbins)
+        if nbins:
+            self.gridx = np.linspace(minx, maxx, nbins)
+            self.gridy = np.linspace(miny, maxy, nbins)
+        else:
+            self.gridx = np.arange(minx, maxx+step, step)
+            self.gridy = np.arange(miny, maxy+step, step)
     
     def get_ds(self, cols=['strokes', 'amplitude'], func='grid', filter_CG=False, **kwargs):
         '''
@@ -94,13 +98,6 @@ class Region:
                     self.y = ds.lat[(ds['amplitude']<0) | (ds['amplitude']>10)].values
         self.x = ds.lon.values
         self.y = ds.lat.values
-    
-    def to_density(self, ds):
-        nyears = ds.time.groupby('time.year').count().shape[0]
-        if hasattr(self, 'FC_grid'):
-            self.FD_grid = self.FC_grid/float(nyears)
-        if hasattr(self, 'DC_grid'):
-            self.DD_grid = self.DC_grid/float(nyears)
     
     def __to_grid(self, group=None, **kwargs):        
         if hasattr(group, '__iter__'):

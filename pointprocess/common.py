@@ -36,3 +36,7 @@ def get_fsizes(fnames, tr):
     s = pd.Series(fsizes, index=tr)
     s = s.sort_values(ascending=False)
     return(s)
+
+ def smooth_grid(grid, sigma=3, **kwargs):
+    from scipy import ndimage
+    return(ndimage.filters.gaussian_filter(grid, sigma, **kwargs))
