@@ -118,7 +118,7 @@ def choose_cmap(pos, neg):
         cmap="RdBu_r"
     return(cmap)
 
-def plot_grid(lat, lon, box, ax=None, cbar=False, interpolation='None', **kwargs):
+def plot_grid(lat, lon, grid, ax=None, cbar=False, interpolation='None', zorder=5, **kwargs):
     '''
     Simple and fast plot generation for gridded data **MUST BE RECTANGULAR**
 
@@ -140,9 +140,13 @@ def plot_grid(lat, lon, box, ax=None, cbar=False, interpolation='None', **kwargs
     '''     
     if ax is None:
         ax = background(plt.axes(projection=ccrs.PlateCarree()))
-    im = ax.imshow(box, interpolation=interpolation,
-                   extent=[lon.min(), lon.max(), lat.min(), lat.max()], 
-                   **kwargs)
+    if (np.array(lat).ndim == 1) or (lat[0,0] == lat[-1,0]):
+        im = ax.imshow(grid, interpolation=interpolation,
+                       extent=[lon.min(), lon.max(), lat.min(), lat.max()], 
+                       **kwargs)
+    else:
+        im = ax.pcolor(lon, lat, grid, **kwargs)
+    ax.set_extent([lon.min(), lon.max(), lat.min(), lat.max()])
     if cbar:
         plt.colorbar(im, ax=ax)
     return(im, ax)

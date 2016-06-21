@@ -145,7 +145,7 @@ class Features:
         for b in self.dirs4:
             ax = plt.subplot(2, 2, b[4], projection=ccrs.PlateCarree())
             if pos and neg:
-                pos_lon, pos_lat, neg_lon, neg_lat, dist = self.get_lon_lat(b, pos, neg, metrics=['area'])
+                pos_lon, pos_lat, neg_lon, neg_lat, dist = self.get_lon_lat(b, pos, neg, metrics)
                 if self.databox:
                     xx, yy, pos_f = self.databox.kde(pos_lon, pos_lat)    
                     xx, yy, neg_f = self.databox.kde(neg_lon, neg_lat) 
@@ -165,9 +165,7 @@ class Features:
             cfset = ax.contourf(xx, yy, f, cmap=choose_cmap(pos, neg), zorder=3, **kwargs)
             background(ax)
             urban(ax, facecolor='None', linewidth=2, edgecolor='red')
-            ax.set_title('From the {direction}: {k} features found, {kph}kph'.format(direction=b[2], 
-                                                                          k=nfeats, 
-                                                                          kph=int(dist*4)))
+            ax.set_title('From the {direction}: {k} features found'.format(direction=b[2], k=nfeats))
             CB = plt.colorbar(cfset, ax=ax) 
             axes.append(ax)
         return(fig)

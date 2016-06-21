@@ -55,7 +55,7 @@ class DataBox:
         33.8 ms for 600x600
         32.9 ms for 60x60
         '''
-        if not grid:
+        if grid is None:
             grid = np.nansum(self.box, axis=0)
         return(plot_grid(self.lat, self.lon, grid, **kwargs))
     
@@ -64,7 +64,51 @@ class DataBox:
         gauss2d = np.array([ndimage.filters.gaussian_filter(self.box[i,:,:], sigma) for i in range(self.box.shape[0])])
         return(gauss2d)
     
-    def add_buffer(self, p):
+    def centralized_difference(self, t_start=None, t_end=None, radius=15, buffer=20, save=False, **kwargs):       
+        l =[]
+        count=0
+        if radius+3 < buffer:
+            r=radius+3
+        else:
+            r=buffer
+        ixy0 = buffer
+        ixyn = self.lat.shape[1]-buffer
+        try:
+            it0 = self.time.get_loc(t_start)
+            itn = self.time.get_loc(t_end)
+        except:
+            it0 = 0
+            itn = self.time.shape[0]-2
+        for ix in range(ixy0, ixyn):
+            for iy in range(ixy0, ixyn):
+                for it in range(it0, itn):
+                    here = self.box[it+1, iy-r:iy+r+1, ix-r:ix+r+1]-self.box[it, iy, ix]
+                    if not np.isnan(np.sum(here)): 
+                        if count == 0:
+                            test = here
+                            count+=1
+                        else:
+                            test += here
+                            count+=1
+        test/=float(count)
+        if 'vmin' not in kwargs.keys():
+            peak = max(np.abs(np.min(test[r-radius:radius+r, r-radius:radius+r])), 
+                       np.max(test[r-radius:radius+r, r-radius:radius+r]))
+            kwargs.update(dict(vmin = -peak, vmax = peak))
+        if 'nrows' in kwargs.keys():
+            nrows = kwargs.pop('nrows')
+            ncols = kwargs.pop('ncols')
+            n = kwargs.pop('n')
+        else:
+            nrows = ncols = n = 1
+        ax = plt.subplot(nrows, ncols, n, projection=ccrs.PlateCarree())
+
+        scat = ax.pcolor(self.lon[iy-r:iy+r+1, ix-r:ix+r+1], self.lat[iy-r:iy+r+1, ix-r:ix+r+1], test, **kwargs)
+        ax.set_extent([self.lon[iy, ix-radius], self.lon[iy, ix+radius], self.lat[iy-radius, ix], self.lat[iy+radius, ix]])
+        ax.scatter(self.lon[iy, ix], self.lat[iy, ix], edgecolor='white', facecolor='None')
+        return(scat, ax, kwargs['vmax'])
+
+    def add_buffer(self, p, extra=0):
         from geopy.distance import vincenty
 
         edges = zip(self.lat[0, :], self.lon[0, :])
@@ -79,7 +123,7 @@ class DataBox:
                 center = p[it, ifeat, ['centroidY', 'centroidX']].values
                 dist = min([vincenty(center, edge).kilometers for edge in edges])
                 r = (p[it, ifeat, ['area']].values/np.pi)**.5
-                if r>dist:
+                if (r+extra)>dist:
                     df0 = p[it,:,:]
                     for ichar in range(21):
                         df0.set_value(p.major_axis[ifeat], p.minor_axis[ichar], np.nan)
