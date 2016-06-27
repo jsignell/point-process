@@ -108,7 +108,7 @@ class DataBox:
         ax.scatter(self.lon[iy, ix], self.lat[iy, ix], edgecolor='white', facecolor='None')
         return(scat, ax, kwargs['vmax'])
 
-    def add_buffer(self, p, extra=0):
+    def add_buffer(self, p, extra=0, aspect=False):
         from geopy.distance import vincenty
 
         edges = zip(self.lat[0, :], self.lon[0, :])
@@ -123,7 +123,13 @@ class DataBox:
                 center = p[it, ifeat, ['centroidY', 'centroidX']].values
                 dist = min([vincenty(center, edge).kilometers for edge in edges])
                 r = (p[it, ifeat, ['area']].values/np.pi)**.5
-                if (r+extra)>dist:
+                if aspect:
+                    asp = p[it, ifeat,['AspectRatio']].values
+                    if asp>1:
+                        asp=1/asp
+                else:
+                    asp = 1
+                if ((r+extra)/asp)>dist:
                     df0 = p[it,:,:]
                     for ichar in range(21):
                         df0.set_value(p.major_axis[ifeat], p.minor_axis[ichar], np.nan)
