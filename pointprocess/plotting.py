@@ -143,9 +143,10 @@ def plot_grid(lat, lon, grid, ax=None, cbar=False, interpolation='None', zorder=
     if (np.array(lat).ndim == 1) or (lat[0,0] == lat[-1,0]):
         im = ax.imshow(grid, interpolation=interpolation,
                        extent=[lon.min(), lon.max(), lat.min(), lat.max()], 
+                       zorder=zorder,
                        **kwargs)
     else:
-        im = ax.pcolor(lon, lat, grid, **kwargs)
+        im = ax.pcolor(lon, lat, grid, zorder=zorder, **kwargs)
     ax.set_extent([lon.min(), lon.max(), lat.min(), lat.max()])
     if cbar:
         plt.colorbar(im, ax=ax)

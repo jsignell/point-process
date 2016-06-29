@@ -35,6 +35,34 @@ class Features:
             bar.set_facecolor(plt.cm.jet(r/float(np.max(radii))))
             bar.set_alpha(0.8)
         return(ax)
+    
+    def windrose(self, ax=None, N=16, bottom=0):
+        if ax is None:
+            ax = plt.subplot(111, polar=True)
+        theta = np.linspace(0.0, 2 *np.pi, N, endpoint=False)
+        ax.set_theta_zero_location("N")
+        width = (2*np.pi) / N
+        
+        bearing = self.p[:,:,'Bearing'].stack()
+        bearing[bearing<0] = bearing[bearing<0] + 360
+        bearing.name = 'bearing'
+        speed = self.p[:,:,'Centroid Distance'].stack()*100*12
+        speed.name = 'speed'
+
+        df = speed.to_frame().join(bearing)
+        
+        srange = zip([0,5,10,20,50], [5,10,20,50,100], ['blue','green','yellow','#FF7800','red']) 
+        ntot = df['bearing'].count()
+        
+        radii0 = [bottom]*N
+        for smin, smax, c in srange:
+            cond = ((df['speed']>=smin) & (df['speed']<smax))
+            radii, _ = np.histogram(df['bearing'][cond].values, bins=N)
+            radii = radii/float(ntot)*100
+            bars = ax.bar(theta, radii, width=width, bottom=radii0, facecolor=c, alpha=0.8)
+            #print smin, smax, c, radii
+            radii0+= radii
+        return(ax)
 
     def get_storm_tracks(self, time=None):
         p = self.p
