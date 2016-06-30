@@ -51,7 +51,7 @@ class Features:
 
         df = speed.to_frame().join(bearing)
         
-        srange = zip([0,5,10,20,50], [5,10,20,50,100], ['blue','green','yellow','#FF7800','red']) 
+        srange = zip([0,5,10,20,50], [5,10,20,50,100], ['#0000dd','green','#dddd00','#FF7800','#dd0000']) 
         ntot = df['bearing'].count()
         
         radii0 = [bottom]*N
