@@ -15,6 +15,44 @@ class Features:
         self.p = p
         self.databox = databox
 
+    def titanize(self):
+        '''
+        TITAN storm tracking output has a particular format with features sorted by complex 
+        tracking numbers rather than by date. This function mimics that behavior by adding 
+        a ComplexNum column to the feature Panel, reshaping it to a dataframe, and eliminating
+        all the null tracking values. 
+        '''
+        df_by_time = self.p.to_frame(filter_observations=False).T
+
+        n=0
+        for it, t in enumerate(self.p.items[:-1]):
+            if self.p.items[it+1]- t > pd.Timedelta(minutes=5):
+                continue
+            df0 = self.p.iloc[it,:,8].dropna()
+            for nfeat0 in df0.index:
+                if it==0:
+                    df_by_time.set_value(t, (nfeat0, 'ComplexNum'), n)
+                    n+=1
+                df1 = self.p.iloc[it+1,:,:][self.p.iloc[it+1,:,7] == df0[nfeat0]]
+                for nfeat1 in df1.index.values:
+                    #print(nfeat0, nfeat1)
+                    try:
+                        df_by_time.loc[t, (nfeat0, 'ComplexNum')]
+                    except:
+                        df_by_time.set_value(t, (nfeat0, 'ComplexNum'), np.nan)
+                    if ~ np.isnan(df_by_time.loc[t, (nfeat0, 'ComplexNum')]):
+                        df_by_time.set_value(self.p.items[it+1], (nfeat1, 'ComplexNum'), df_by_time.loc[t, (nfeat0, 'ComplexNum')])
+                    else:
+                        #print 'incrementing n'
+                        df_by_time.set_value(t, (nfeat0, 'ComplexNum'), n)
+                        df_by_time.set_value(self.p.items[it+1], (nfeat1, 'ComplexNum'), n)
+                        n+=1
+
+        df_lightning = pd.concat([df_by_time[n] for n in self.p.major_axis]).dropna(how='all')
+        df_light = df_lightning.reset_index().sort_values(['ComplexNum', 'index']).set_index([range(df_lightning.shape[0])])
+        df_titanized = df_light[0:(df_light.ComplexNum.dropna().index[-1]+1)]
+        return(df_titanized)
+
     def bearing_plot(self, ax=None, N=16, bottom=0):
         p = self.p
         if ax is None:
@@ -64,28 +102,28 @@ class Features:
             radii0+= radii
         return(ax)
 
-    def get_storm_tracks(self, time=None):
-        p = self.p
-        tracks = []
-        for it in range(p.shape[0]-1):
-            try:
-                df0 = p[self.databox.time[it],:,['centroidX', 'centroidY', 'Forecast']].dropna()
-                df1 = p[self.databox.time[it+1],:,['centroidX', 'centroidY', 'Observed']].dropna()
-            except:
-                continue
-            df0.index = df0['Forecast']
-            df1.index = df1['Observed']
-            df = df0.join(df1, lsuffix='_start', rsuffix='_end').dropna(how='any')
-            tracks.append(df)
-        return(tracks)
+#     def get_storm_tracks(self, time=None):
+#         p = self.p
+#         tracks = []
+#         for it in range(p.shape[0]-1):
+#             try:
+#                 df0 = p[self.databox.time[it],:,['centroidX', 'centroidY', 'Forecast']].dropna()
+#                 df1 = p[self.databox.time[it+1],:,['centroidX', 'centroidY', 'Observed']].dropna()
+#             except:
+#                 continue
+#             df0.index = df0['Forecast']
+#             df1.index = df1['Observed']
+#             df = df0.join(df1, lsuffix='_start', rsuffix='_end').dropna(how='any')
+#             tracks.append(df)
+#         return(tracks)
 
-    def plot_storm_tracks(self, ax, c='red', zorder=10):
-        p = self.p
-        tracks = self.get_storm_tracks()
-        for i in range(len(tracks)-1):
-            for ifeat in range(tracks[i].shape[0]):
-                ax.plot(tracks[i].iloc[ifeat,[0,3]].values, tracks[i].iloc[ifeat,[1,4]].values, c=c, zorder=zorder)
-        return(ax)
+#     def plot_storm_tracks(self, ax, c='red', zorder=10):
+#         p = self.p
+#         tracks = self.get_storm_tracks()
+#         for i in range(len(tracks)-1):
+#             for ifeat in range(tracks[i].shape[0]):
+#                 ax.plot(tracks[i].iloc[ifeat,[0,3]].values, tracks[i].iloc[ifeat,[1,4]].values, c=c, zorder=zorder)
+#         return(ax)
 
     def get_dirs4(self):
         p = self.p
@@ -102,32 +140,30 @@ class Features:
             n+=1
         self.dirs4 = dirs4
 
-    '''
-    def get_dirs8(self):
-        p = self.p
-        n = [-15, 15, 'North']
-        ne = [30, 60, 'North East']
-        e = [75, 105, 'East']
-        se = [120, 150, 'South East']
-        s = [165, -165, 'South']
-        sw = [-150, -120, 'South West']
-        w = [-105, -75, 'West']
-        nw = [-60, -30, 'North West']
-        dirs8 = [nw, n, ne, w, None, e, sw, s, se]
-        n = 1
-        for i, b in enumerate(dirs8):
-            if i == 4:
-                n+=1
-                continue
-            elif i == 7:
-                bool_array = ((p[:,:,'Bearing']>b[0]) | (p[:,:,'Bearing']<b[1])) 
-            else:
-                bool_array = ((p[:,:,'Bearing']>b[0]) & (p[:,:,'Bearing']<b[1]))
-            b.append(bool_array)
-            b.append(n)
-            n+=1
-        self.dirs8 = dirs8
-    '''
+    # def get_dirs8(self):
+    #     p = self.p
+    #     n = [-15, 15, 'North']
+    #     ne = [30, 60, 'North East']
+    #     e = [75, 105, 'East']
+    #     se = [120, 150, 'South East']
+    #     s = [165, -165, 'South']
+    #     sw = [-150, -120, 'South West']
+    #     w = [-105, -75, 'West']
+    #     nw = [-60, -30, 'North West']
+    #     dirs8 = [nw, n, ne, w, None, e, sw, s, se]
+    #     n = 1
+    #     for i, b in enumerate(dirs8):
+    #         if i == 4:
+    #             n+=1
+    #             continue
+    #         elif i == 7:
+    #             bool_array = ((p[:,:,'Bearing']>b[0]) | (p[:,:,'Bearing']<b[1])) 
+    #         else:
+    #             bool_array = ((p[:,:,'Bearing']>b[0]) & (p[:,:,'Bearing']<b[1]))
+    #         b.append(bool_array)
+    #         b.append(n)
+    #         n+=1
+    #     self.dirs8 = dirs8
 
     def get_lon_lat(self, b, pos=False, neg=False, metrics=['area', 'Intensity0.9', 'Intensity0.25']):
         p = self.p
