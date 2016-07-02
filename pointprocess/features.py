@@ -50,8 +50,10 @@ class Features:
 
         df_lightning = pd.concat([df_by_time[n] for n in self.p.major_axis]).dropna(how='all')
         df_light = df_lightning.reset_index().sort_values(['ComplexNum', 'index']).set_index([range(df_lightning.shape[0])])
-        df_titanized = df_light[0:(df_light.ComplexNum.dropna().index[-1]+1)]
-        return(df_titanized)
+        df_light = df_light[0:(df_light.ComplexNum.dropna().index[-1]+1)]
+        df_light = df_light.set_index(df_light['index']).drop('index', axis=1)
+        df_light.index.name = 'date_time'
+        return(df_light)
 
     def bearing_plot(self, ax=None, N=16, bottom=0):
         p = self.p

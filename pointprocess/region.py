@@ -227,7 +227,7 @@ class Region:
         ds.close()
         return(box, tr)
 
-    def get_grid_slices(self, ds, start, end, freq='5min', filter_CG=False):
+    def get_grid_slices(self, ds, start=None, end=None, freq='5min', tr=None, filter_CG=False):
         '''
         For the pre-defined grid, use indicated frequency to also bin along the time dimension
         
@@ -257,8 +257,8 @@ class Region:
                 else:
                     df = df[(df['amplitude']<0) | (df['amplitude']>10)]
         df.index = df.time
-        
-        tr = pd.date_range(start, end, freq=freq)
+        if tr is None:
+            tr = pd.date_range(start, end, freq=freq)
         d = []
         for i in range(len(tr)-1):
             grid, _,_ = np.histogram2d(df.lon[tr[i]:tr[i+1]].values, df.lat[tr[i]:tr[i+1]].values, bins=[self.gridx, self.gridy])
