@@ -62,11 +62,11 @@ class Features:
         bearing = p[:,:,'Bearing']
         bearing[bearing<0] = bearing[bearing<0] + 360
 
-        theta = np.linspace(0.0, 2 *np.pi, N, endpoint=False)
-        radii, _ = np.histogram(bearing.unstack().dropna().values, bins=N)
+        theta = np.linspace(0.0, 2 *np.pi, N+1)
+        radii, _ = np.histogram(bearing.unstack().dropna().values, bins=(theta/np.pi*180))
         width = (2*np.pi) / N
 
-        bars = ax.bar(theta, radii, width=width, bottom=bottom)
+        bars = ax.bar(theta[:-1], radii, width=width, bottom=bottom)
         ax.set_theta_zero_location("N")
         #ax.set_theta_direction(-1)
 
@@ -79,7 +79,7 @@ class Features:
     def windrose(self, ax=None, N=16, bottom=0):
         if ax is None:
             ax = plt.subplot(111, polar=True)
-        theta = np.linspace(0.0, 2 *np.pi, N, endpoint=False)
+        theta = np.linspace(0.0, 2 *np.pi, N+1)
         ax.set_theta_zero_location("N")
         width = (2*np.pi) / N
         
@@ -97,9 +97,9 @@ class Features:
         radii0 = [bottom]*N
         for smin, smax, c in srange:
             cond = ((df['speed']>=smin) & (df['speed']<smax))
-            radii, _ = np.histogram(df['bearing'][cond].values, bins=N)
+            radii, _ = np.histogram(df['bearing'][cond].values, bins=(theta/np.pi*180))
             radii = radii/float(ntot)*100
-            bars = ax.bar(theta, radii, width=width, bottom=radii0, facecolor=c, alpha=0.8)
+            bars = ax.bar(theta[:-1], radii, width=width, bottom=radii0, facecolor=c, alpha=0.8)
             #print smin, smax, c, radii
             radii0+= radii
         return(ax)
