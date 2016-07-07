@@ -177,3 +177,27 @@ def windrose_cbar(fig=None):
             ax.text(.1, .4, '{smin} - {smax}\nkm/hr'.format(smin=smin, smax=smax),
                     fontsize=min(14, y+5), fontdict = {'color': 'white'})
         n+=1
+
+def feature_locations(titanized_df, ax=None, figsize=(14,8), lat='centroidY' ,lon='centroidX',
+                    paths=False, features=True, zoom=7, zorder=5, colorby='ComplexNum', c='k'):
+    '''
+    Use a computed titanized dataframe to show all the features and their paths
+    '''
+    if ax is None:
+        from cartopy.io.img_tiles import StamenTerrain
+        plt.figure(figsize=figsize)
+        ax = plt.axes(projection=ccrs.PlateCarree())
+        background(ax)
+        ax.add_image(StamenTerrain(), zoom)
+    if features:
+        storm_names = dict([(n[1], n[0]) for n in enumerate(df[colorby].unique())])
+        df.plot.scatter(x=lon, y=lat, 
+                        c=[storm_names[n] for n in df[colorby]],
+                        ax=ax, cmap='rainbow',
+                        edgecolor='None', s=50, zorder=zorder)
+    if paths:
+        gb = df.groupby(df['ComplexNum'])
+        for k,v in gb.groups.items():
+            gb.get_group(k).plot(x=lon, y=lat, c=c, ax=ax, legend=None, zorder=zorder+1)
+    return(ax)
+

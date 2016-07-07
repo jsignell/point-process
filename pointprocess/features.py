@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from plotting import *
 import pandas as pd
 import numpy as np
 
@@ -15,7 +16,7 @@ class Features:
         self.p = p
         self.databox = databox
 
-    def titanize(self):
+    def titanize(self, plot=False, **map_kwargs):
         '''
         TITAN storm tracking output has a particular format with features sorted by complex 
         tracking numbers rather than by date. This function mimics that behavior by adding 
@@ -53,6 +54,8 @@ class Features:
         df_light = df_light[0:(df_light.ComplexNum.dropna().index[-1]+1)]
         df_light = df_light.set_index(df_light['index']).drop('index', axis=1)
         df_light.index.name = 'date_time'
+        if plot:
+            feature_locations(df_light, **map_kwargs)
         return(df_light)
 
     def bearing_plot(self, ax=None, N=16, bottom=0):
@@ -76,7 +79,7 @@ class Features:
             bar.set_alpha(0.8)
         return(ax)
     
-    def windrose(self, ax=None, N=16, bottom=0):
+    def windrose(self, ax=None, N=16, bottom=0, cbar=True, **cbar_kwargs):
         if ax is None:
             ax = plt.subplot(111, polar=True)
         theta = np.linspace(0.0, 2 *np.pi, N+1)
@@ -102,6 +105,8 @@ class Features:
             bars = ax.bar(theta[:-1], radii, width=width, bottom=radii0, facecolor=c, alpha=0.8)
             #print smin, smax, c, radii
             radii0+= radii
+        if cbar:
+            windrose_cbar(**cbar_kwargs)
         return(ax)
 
 #     def get_storm_tracks(self, time=None):
