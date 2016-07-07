@@ -178,7 +178,7 @@ def windrose_cbar(fig=None):
                     fontsize=min(14, y+5), fontdict = {'color': 'white'})
         n+=1
 
-def feature_locations(titanized_df, ax=None, figsize=(14,8), lat='centroidY' ,lon='centroidX',
+def feature_locations(df, ax=None, figsize=(14,8), lat='centroidY' ,lon='centroidX',
                     paths=False, features=True, zoom=7, zorder=5, colorby='ComplexNum', c='k'):
     '''
     Use a computed titanized dataframe to show all the features and their paths
