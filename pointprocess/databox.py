@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-from common import *
-from plotting import *
 
 class DataBox:
     def __init__(self, time, lat, lon, box):
@@ -19,10 +17,10 @@ class DataBox:
 
     def show(self):
         print('DataBox of shape: {shape}'.format(shape=self.box.shape))
-    
+
     def flat_plot(self):
         import matplotlib.pyplot as plt
-        
+
         fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(16,4))
 
         axes[0].plot(np.sum(self.box, axis=(1,2)))
@@ -34,22 +32,22 @@ class DataBox:
         axes[2].plot(np.sum(self.box, axis=(0,1)))
         axes[2].set_title("Flattened x axis")
         return(fig)
-    
+
     def plot_grid(self, grid=None, **kwargs):
         '''
         Simple and fast plot generation for gridded data
-        
+
         Parameters
         ----------
         grid: np.array with shape matching self.lat
         ax: matplotlib axes object, if not given generates and populates with basic map
         cbar: bool indicating whether or not to show default colorbar
         **kwargs: fed directly into ax.imshow()
-        
+
         Returns
         -------
         im, ax: (output from ax.imshow, matplotlib axes object)
-        
+
         Benchmarking
         ------------
         33.8 ms for 600x600
@@ -58,13 +56,13 @@ class DataBox:
         if grid is None:
             grid = np.nansum(self.box, axis=0)
         return(plot_grid(self.lat, self.lon, grid, **kwargs))
-    
+
     def get_gauss2d(self, sigma=3):
         from scipy import ndimage
         gauss2d = np.array([ndimage.filters.gaussian_filter(self.box[i,:,:], sigma) for i in range(self.box.shape[0])])
         return(gauss2d)
-    
-    def centralized_difference(self, t_start=None, t_end=None, radius=15, buffer=20, save=False, **kwargs):       
+
+    def centralized_difference(self, t_start=None, t_end=None, radius=15, buffer=20, save=False, **kwargs):
         l =[]
         count=0
         if radius+3 < buffer:
@@ -83,7 +81,7 @@ class DataBox:
             for iy in range(ixy0, ixyn):
                 for it in range(it0, itn):
                     here = self.box[it+1, iy-r:iy+r+1, ix-r:ix+r+1]-self.box[it, iy, ix]
-                    if not np.isnan(np.sum(here)): 
+                    if not np.isnan(np.sum(here)):
                         if count == 0:
                             test = here
                             count+=1
@@ -92,7 +90,7 @@ class DataBox:
                             count+=1
         test/=float(count)
         if 'vmin' not in kwargs.keys():
-            peak = max(np.abs(np.min(test[r-radius:radius+r, r-radius:radius+r])), 
+            peak = max(np.abs(np.min(test[r-radius:radius+r, r-radius:radius+r])),
                        np.max(test[r-radius:radius+r, r-radius:radius+r]))
             kwargs.update(dict(vmin = -peak, vmax = peak))
         if 'nrows' in kwargs.keys():
@@ -137,11 +135,11 @@ class DataBox:
 
     def get_features(self, d={}, thresh=.01, sigma=3, min_size=4, const=5, return_dict=False, buffer=False):
         '''
-        Use r package SpatialVx to identify features. 
-        
+        Use r package SpatialVx to identify features.
+
         Parameters
         ----------
-        thresh: .01 
+        thresh: .01
         sigma: 3
         min_size: 4
         const: 5
@@ -151,7 +149,7 @@ class DataBox:
         ------
         p: pd.Panel containing parameters characterizing the features found
         '''
-        from rpy2 import robjects 
+        from rpy2 import robjects
         from rpy2.robjects.packages import importr
         from rpy2.robjects import pandas2ri
         pandas2ri.activate()
@@ -162,14 +160,14 @@ class DataBox:
         ll = np.array([self.lon.flatten('F'), self.lat.flatten('F')]).T
         for i in range(self.box.shape[0]-1):
             hold = SpatialVx.make_SpatialVx(self.box[i,:,:], self.box[i+1,:,:], loc=ll)
-            look = r_tools.FeatureFinder_gaussian(hold, nx=self.box.shape[2], ny=self.box.shape[1], 
+            look = r_tools.FeatureFinder_gaussian(hold, nx=self.box.shape[2], ny=self.box.shape[1],
                                                   thresh=thresh, smoothpar=sigma, **(dotvars(min_size=min_size)))
             try:
                 x = rsummary(look, silent=True)[0]
             except:
                 continue
             px = pandas2ri.ri2py(x)
-            df0 = pd.DataFrame(px, columns=['centroidX', 'centroidY', 'area', 'OrientationAngle', 
+            df0 = pd.DataFrame(px, columns=['centroidX', 'centroidY', 'area', 'OrientationAngle',
                                           'AspectRatio', 'Intensity0.25', 'Intensity0.9'])
             df0['Observed'] = list(df0.index+1)
             m = SpatialVx.centmatch(look, criteria=3, const=const)
@@ -201,4 +199,4 @@ class DataBox:
         values = np.vstack([lon, lat])
         kernel = st.gaussian_kde(values)
         f = np.reshape(kernel(positions).T, xx.shape)
-        return(xx,yy,f)    
+        return(xx,yy,f)

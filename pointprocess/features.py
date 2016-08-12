@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from plotting import *
+from .plotting import background
 import pandas as pd
 import numpy as np
 
@@ -10,7 +10,7 @@ class Features:
     p: pandas.Panel containing properties about all of the features and how they are matched
     databox: optional - a DataBox object with attributes: time, lat, lon, and box
 
-    Return 
+    Return
     '''
     def __init__(self, p, databox=None):
         self.p = p
@@ -18,10 +18,10 @@ class Features:
 
     def titanize(self, plot=False, **map_kwargs):
         '''
-        TITAN storm tracking output has a particular format with features sorted by complex 
-        tracking numbers rather than by date. This function mimics that behavior by adding 
+        TITAN storm tracking output has a particular format with features sorted by complex
+        tracking numbers rather than by date. This function mimics that behavior by adding
         a ComplexNum column to the feature Panel, reshaping it to a dataframe, and eliminating
-        all the null tracking values. 
+        all the null tracking values.
         '''
         df_by_time = self.p.to_frame(filter_observations=False).T
 
@@ -78,14 +78,14 @@ class Features:
             bar.set_facecolor(plt.cm.jet(r/float(np.max(radii))))
             bar.set_alpha(0.8)
         return(ax)
-    
+
     def windrose(self, ax=None, N=16, bottom=0, cbar=True, **cbar_kwargs):
         if ax is None:
             ax = plt.subplot(111, polar=True)
         theta = np.linspace(0.0, 2 *np.pi, N+1)
         ax.set_theta_zero_location("N")
         width = (2*np.pi) / N
-        
+
         bearing = self.p[:,:,'Bearing'].stack()
         bearing[bearing<0] = bearing[bearing<0] + 360
         bearing.name = 'bearing'
@@ -93,10 +93,10 @@ class Features:
         speed.name = 'speed'
 
         df = speed.to_frame().join(bearing)
-        
-        srange = zip([0,5,10,20,50], [5,10,20,50,100], ['#0000dd','green','#dddd00','#FF7800','#dd0000']) 
+
+        srange = zip([0,5,10,20,50], [5,10,20,50,100], ['#0000dd','green','#dddd00','#FF7800','#dd0000'])
         ntot = df['bearing'].count()
-        
+
         radii0 = [bottom]*N
         for smin, smax, c in srange:
             cond = ((df['speed']>=smin) & (df['speed']<smax))
@@ -164,7 +164,7 @@ class Features:
     #             n+=1
     #             continue
     #         elif i == 7:
-    #             bool_array = ((p[:,:,'Bearing']>b[0]) | (p[:,:,'Bearing']<b[1])) 
+    #             bool_array = ((p[:,:,'Bearing']>b[0]) | (p[:,:,'Bearing']<b[1]))
     #         else:
     #             bool_array = ((p[:,:,'Bearing']>b[0]) & (p[:,:,'Bearing']<b[1]))
     #         b.append(bool_array)
@@ -218,11 +218,11 @@ class Features:
             if pos and neg:
                 pos_lon, pos_lat, neg_lon, neg_lat, dist = self.get_lon_lat(b, pos, neg, metrics)
                 if self.databox:
-                    xx, yy, pos_f = self.databox.kde(pos_lon, pos_lat)    
-                    xx, yy, neg_f = self.databox.kde(neg_lon, neg_lat) 
+                    xx, yy, pos_f = self.databox.kde(pos_lon, pos_lat)
+                    xx, yy, neg_f = self.databox.kde(neg_lon, neg_lat)
                 else:
-                    xx, yy, pos_f = kde(lon, lat, pos_lon, pos_lat)    
-                    xx, yy, neg_f = kde(lon, lat, neg_lon, neg_lat) 
+                    xx, yy, pos_f = kde(lon, lat, pos_lon, pos_lat)
+                    xx, yy, neg_f = kde(lon, lat, neg_lon, neg_lat)
                 f = (pos_f-neg_f)
                 flim = np.ceil(max(np.abs(f.min()), f.max()))
                 nfeats = pos_lon.shape[0]+neg_lon.shape[0]
@@ -237,7 +237,7 @@ class Features:
             background(ax)
             urban(ax, facecolor='None', linewidth=2, edgecolor='red')
             ax.set_title('From the {direction}: {k} features found'.format(direction=b[2], k=nfeats))
-            CB = plt.colorbar(cfset, ax=ax) 
+            CB = plt.colorbar(cfset, ax=ax)
             axes.append(ax)
         return(fig)
 
@@ -248,4 +248,4 @@ def kde(lon, lat, _lon, _lat):
     values = np.vstack([_lon, _lat])
     kernel = st.gaussian_kde(values)
     f = np.reshape(kernel(positions).T, xx.shape)
-    return(xx,yy,f)    
+    return(xx,yy,f)

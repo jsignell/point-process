@@ -19,7 +19,7 @@ def background_scale(ax, scale='110m'):
     coast = cfeature.NaturalEarthFeature('physical', 'coastline', scale,
                                          edgecolor='k', facecolor='None')
     ax.add_feature(ocean, zorder=4)
-    ax.add_feature(coast, zorder=6)   
+    ax.add_feature(coast, zorder=6)
     ax.add_feature(states, zorder=7)
     gl = ax.gridlines(draw_labels=True, zorder=3)
     gl.xlabels_top = False
@@ -36,8 +36,8 @@ def background(ax):
                                           facecolor='none')
     ax.add_feature(cfeature.OCEAN, zorder=4)
     ax.add_feature(cfeature.COASTLINE, zorder=6)
-    
-    ax.add_feature(cfeature.BORDERS, zorder=7)     
+
+    ax.add_feature(cfeature.BORDERS, zorder=7)
     ax.add_feature(states, zorder=8)
     gl = ax.gridlines(draw_labels=True, zorder=3)
     gl.xlabels_top = False
@@ -88,21 +88,21 @@ def dem(ax, dem_cbar=False):
     levels = [((elev.max()-elev.min())/whole, whole) for whole in [10,20,50,100,200,500,1000]]
     level = min([level for level in levels if 5<level[0]<20])
 
-    plot_kwargs = dict(cmap=plt.get_cmap('Greys', level[0]), 
+    plot_kwargs = dict(cmap=plt.get_cmap('Greys', level[0]),
                        vmin=level[1]* np.floor_divide(elev.min(), level[1]),
                        vmax=level[1]* np.floor_divide(elev.max(), level[1]))
     dem = ax.imshow(elev, extent=extent, transform=crs, origin='lower', **plot_kwargs)
     ax.set_extent([x0, xn, y0, yn])
     if dem_cbar:
-        plt.colorbar(dem, ax=ax, ticks=range(int(plot_kwargs['vmin']), int(plot_kwargs['vmax']), level[1]), 
+        plt.colorbar(dem, ax=ax, ticks=range(int(plot_kwargs['vmin']), int(plot_kwargs['vmax']), level[1]),
                      orientation='horizontal');
     return(ax)
-        
+
 def urban(ax, **kwargs):
     urban = cfeature.NaturalEarthFeature(category='cultural',
                                          name='urban_areas',
                                          scale='10m',
-                                         edgecolor='red', 
+                                         edgecolor='red',
                                          facecolor='None')
     ax.add_feature(urban, zorder=10, **kwargs)
     return(ax)
@@ -137,12 +137,12 @@ def plot_grid(lat, lon, grid, ax=None, cbar=False, interpolation='None', zorder=
     ------------
     33.8 ms for 600x600
     32.9 ms for 60x60
-    '''     
+    '''
     if ax is None:
         ax = background(plt.axes(projection=ccrs.PlateCarree()))
     if (np.array(lat).ndim == 1) or (lat[0,0] == lat[-1,0]):
         im = ax.imshow(grid, interpolation=interpolation,
-                       extent=[lon.min(), lon.max(), lat.min(), lat.max()], 
+                       extent=[lon.min(), lon.max(), lat.min(), lat.max()],
                        zorder=zorder,
                        **kwargs)
     else:
@@ -158,12 +158,12 @@ def windrose_cbar(fig=None):
     and the colorbar will be drawn to suit
     '''
     import matplotlib.patches as mpatch
-    
+
     if fig is None:
         fig = plt.figure(figsize=(8,1))
     y = fig.get_figwidth()
-    
-    srange = zip([0,5,10,20,50], [5,10,20,50,100], ['#0000dd','green','#dddd00','#FF7800','#dd0000']) 
+
+    srange = zip([0,5,10,20,50], [5,10,20,50,100], ['#0000dd','green','#dddd00','#FF7800','#dd0000'])
     n=1
     for smin, smax, c in srange:
         ax = plt.subplot(1,5,n)
@@ -191,7 +191,7 @@ def feature_locations(df, ax=None, figsize=(14,8), lat='centroidY' ,lon='centroi
         ax.add_image(StamenTerrain(), zoom)
     if features:
         storm_names = dict([(n[1], n[0]) for n in enumerate(df[colorby].unique())])
-        df.plot.scatter(x=lon, y=lat, 
+        df.plot.scatter(x=lon, y=lat,
                         c=[storm_names[n] for n in df[colorby]],
                         ax=ax, cmap='rainbow',
                         edgecolor='None', s=50, zorder=zorder)
@@ -200,4 +200,3 @@ def feature_locations(df, ax=None, figsize=(14,8), lat='centroidY' ,lon='centroi
         for k,v in gb.groups.items():
             gb.get_group(k).plot(x=lon, y=lat, c=c, ax=ax, legend=None, zorder=zorder+1)
     return(ax)
-

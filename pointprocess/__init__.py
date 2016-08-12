@@ -1,5 +1,3 @@
-from plotting import *
-from region import Region
-from features import Features
-from databox import DataBox
-
+from .region import Region
+from .databox import DataBox
+from .features import Features

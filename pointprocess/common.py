@@ -35,8 +35,21 @@ def get_fsizes(fnames, tr):
             fsizes.append(0)
     s = pd.Series(fsizes, index=tr)
     s = s.sort_values(ascending=False)
-    return(s)
+    return s
 
 def smooth_grid(grid, sigma=3, **kwargs):
-    from scipy import ndimage
-    return(ndimage.filters.gaussian_filter(grid, sigma, **kwargs))
+    from scipy.ndimage.filters import gaussian_filter
+    return gaussian_filter(grid, sigma, **kwargs)
+
+def filter_out_CC(ds, amplitude_range=None):
+    if 'cloud_ground' in ds.data_vars:
+        df = ds.cloud_ground.to_dataframe()
+        ds = df.loc[(df['cloud_ground'] == b'G') |
+                    (df['cloud_ground'] == 'G')].to_xarray()
+        return ds.set_coords(['lat','lon', 'time'])
+    elif hasattr(amplitude_range, '__iter__'):
+        return ds.where((ds['amplitude']<amplitude_range[0]) |
+                        (ds['amplitude']>amplitude_range[1])).dropna('record')
+    else:
+        return ds.where((ds['amplitude']<0) |
+                        (ds['amplitude']>10)).dropna('record')
