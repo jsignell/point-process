@@ -43,10 +43,8 @@ def smooth_grid(grid, sigma=3, **kwargs):
 
 def filter_out_CC(ds, amplitude_range=None):
     if 'cloud_ground' in ds.data_vars:
-        df = ds.cloud_ground.to_dataframe()
-        ds = df.loc[(df['cloud_ground'] == b'G') |
-                    (df['cloud_ground'] == 'G')].to_xarray()
-        return ds.set_coords(['lat','lon', 'time'])
+        return ds.where((ds['cloud_ground'] == b'G') |
+                        (ds['cloud_ground'] == 'G')).dropna('record')
     elif hasattr(amplitude_range, '__iter__'):
         return ds.where((ds['amplitude']<amplitude_range[0]) |
                         (ds['amplitude']>amplitude_range[1])).dropna('record')
