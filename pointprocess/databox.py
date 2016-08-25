@@ -110,10 +110,10 @@ class DataBox:
     def add_buffer(self, p, extra=0, aspect=False):
         from geopy.distance import vincenty
 
-        edges = zip(self.lat[0, :], self.lon[0, :])
-        edges.extend(zip(self.lat[:, -1], self.lon[:, -1]))
-        edges.extend(zip(np.flipud(self.lat[-1, :]), np.flipud(self.lon[-1, :])))
-        edges.extend(zip(np.flipud(self.lat[:, 0]), np.flipud(self.lon[:, 0])))
+        edges = list(zip(self.lat[0, :], self.lon[0, :]))
+        edges.extend(list(zip(self.lat[:, -1], self.lon[:, -1])))
+        edges.extend(list(zip(np.flipud(self.lat[-1, :]), np.flipud(self.lon[-1, :]))))
+        edges.extend(list(zip(np.flipud(self.lat[:, 0]), np.flipud(self.lon[:, 0]))))
 
         for it in range(p.shape[0]):
             for ifeat in range(p.shape[1]):
@@ -132,7 +132,7 @@ class DataBox:
                     df0 = p[it,:,:]
                     for ichar in range(21):
                         df0.set_value(p.major_axis[ifeat], p.minor_axis[ichar], np.nan)
-        return(p)
+        return p
 
     def get_features(self, d={}, thresh=.01, sigma=3, min_size=4, const=5, return_dict=False, buffer=False):
         '''
