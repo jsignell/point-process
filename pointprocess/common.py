@@ -41,13 +41,12 @@ def smooth_grid(grid, sigma=3, **kwargs):
     from scipy.ndimage.filters import gaussian_filter
     return gaussian_filter(grid, sigma, **kwargs)
 
-def filter_out_CC(ds, amplitude_range=None):
-    if 'cloud_ground' in ds.data_vars:
+def filter_out_CC(ds, method='range', amax=0, amin=10):
+    if method == 'CG':
         return ds.where((ds['cloud_ground'] == b'G') |
                         (ds['cloud_ground'] == 'G')).dropna('record')
-    elif hasattr(amplitude_range, '__iter__'):
-        return ds.where((ds['amplitude']<amplitude_range[0]) |
-                        (ds['amplitude']>amplitude_range[1])).dropna('record')
-    else:
-        return ds.where((ds['amplitude']<0) |
-                        (ds['amplitude']>10)).dropna('record')
+    elif method == 'range':
+        return ds.where((ds['amplitude']<amax) |
+                        (ds['amplitude']>amin)).dropna('record')
+    elif method == 'less_than':
+        return ds.where(ds['amplitude']<amax).dropna('record')

@@ -81,7 +81,7 @@ class Region:
         ds = xr.open_mfdataset(self.PATH+fname, concat_dim='record',
                                preprocess=preprocess_func)
         if filter_CG:
-            ds = filter_out_CC(ds, filter_CG)
+            ds = filter_out_CC(ds, **filter_CG)
         if func == 'grid':
             self.set_x_y(ds)
             self.FC_grid = self.__to_grid()
@@ -160,7 +160,7 @@ class Region:
 
             ds0 = ds.where((ds.time>UTC12[0]) & (ds.time<UTC12[1])).dropna('record')
             if filter_CG:
-                ds0 = filter_out_CC(ds0, filter_CG)
+                ds0 = filter_out_CC(ds0, **filter_CG)
             ds.close()
 
         if func=='grid':
@@ -214,7 +214,7 @@ class Region:
         1.16 s for 600x600 5min
         608 ms for 60x60 5min
         '''
-        ds = self.get_daily_ds(t, base=base, func=None)
+        ds = self.get_daily_ds(t, base=base, func=None, **kwargs)
         t = fix_t(t, base)
         start = t
         end = t+pd.DateOffset(1)
@@ -243,7 +243,7 @@ class Region:
         tr: timerange of shape (ntimesteps)
         '''
         if filter_CG:
-            ds = filter_out_CC(ds, filter_CG)
+            ds = filter_out_CC(ds, **filter_CG)
         df = ds.to_dataframe()
         df.index = df.time
         if tr is None:
