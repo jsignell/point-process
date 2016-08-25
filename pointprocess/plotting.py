@@ -4,25 +4,11 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from cartopy.io.img_tiles import GoogleTiles, StamenTerrain
 
-def background_scale(ax, scale='110m'):
-    '''
-    Add standard background features to geoAxes object
-    '''
-    states = cfeature.NaturalEarthFeature(category='cultural',
-                                          name='admin_1_states_provinces_lines',
-                                          scale=scale,
-                                          facecolor='none')
-    ocean = cfeature.NaturalEarthFeature('physical', 'ocean', scale,
-                                         edgecolor='None', facecolor=cfeature.COLORS['water'])
-    coast = cfeature.NaturalEarthFeature('physical', 'coastline', scale,
-                                         edgecolor='k', facecolor='None')
-    ax.add_feature(ocean, zorder=4)
-    ax.add_feature(coast, zorder=6)
-    ax.add_feature(states, zorder=7)
+def gridlines(ax):
     gl = ax.gridlines(draw_labels=True, zorder=3)
     gl.xlabels_top = False
     gl.ylabels_right = False
-    return(ax)
+    return ax
 
 def background(ax):
     '''
@@ -37,17 +23,15 @@ def background(ax):
 
     ax.add_feature(cfeature.BORDERS, zorder=7)
     ax.add_feature(states, zorder=8)
-    gl = ax.gridlines(draw_labels=True, zorder=3)
-    gl.xlabels_top = False
-    gl.ylabels_right = False
-    return(ax)
+    ax = gridlines(ax)
+    return ax
 
 def pre_shaded(ax, fname, zorder=2):
     img_extent = ([-180, 180, -90, 90])
     img = plt.imread(fname)
     ax.imshow(img, origin='upper', extent=img_extent,
               transform=ccrs.PlateCarree(), cmap='Greys_r', zorder=zorder)
-    return(ax)
+    return ax
 
 class ShadedReliefESRI(GoogleTiles):
     """
@@ -71,7 +55,7 @@ def urban(ax, **kwargs):
                                          edgecolor='red',
                                          facecolor='None')
     ax.add_feature(urban, zorder=10, **kwargs)
-    return(ax)
+    return ax
 
 def choose_cmap(pos, neg):
     if pos and not neg:
@@ -106,9 +90,7 @@ def plot_contour(lat, lon, grid, ax=None, extent=None,
     CS = plt.contour(x, y, z, N, cmap='Greys', **kwargs)
     plt.clabel(CS, inline=1, fontsize=fontsize, fmt=fmt)
     ax.add_image(tiler, zoom)
-    gl = ax.gridlines(draw_labels=True)
-    gl.xlabels_top = False
-    gl.ylabels_right = False
+    ax = gridlines(ax)
     return ax
 
 def plot_grid(lat, lon, grid, ax=None, cbar=False, interpolation='None', zorder=5, **kwargs):
