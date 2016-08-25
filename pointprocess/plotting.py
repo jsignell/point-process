@@ -1,10 +1,8 @@
+import numpy as np
+import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-from cartopy.io import srtm, PostprocessedRasterSource, LocatedImage
-from cartopy.io.srtm import SRTM3Source
-
-import matplotlib.pyplot as plt
-import numpy as np
+from cartopy.io.img_tiles import GoogleTiles, StamenTerrain
 
 def background_scale(ax, scale='110m'):
     '''
@@ -47,56 +45,24 @@ def background(ax):
 def pre_shaded(ax, fname, zorder=2):
     img_extent = ([-180, 180, -90, 90])
     img = plt.imread(fname)
-    ax.imshow(img, origin='upper', extent=img_extent, transform=ccrs.PlateCarree(), cmap='Greys_r', zorder=zorder)
+    ax.imshow(img, origin='upper', extent=img_extent,
+              transform=ccrs.PlateCarree(), cmap='Greys_r', zorder=zorder)
     return(ax)
 
-def shade(located_elevations):
+class ShadedReliefESRI(GoogleTiles):
     """
-    Given an array of elevations in a LocatedImage, add a relief (shadows) to
-    give a realistic 3d appearance.
-
+    I struggled for a WHILE to find a basemap tiling service that I was happy
+    with. There are some good options available through Mapbox, but the best
+    plain, no label, shaded relief that I found is provided by ESRI. Check out
+    their license before you use this tiler.
     """
-    new_img = srtm.add_shading(located_elevations.image,
-                               azimuth=315, altitude=45)
-    return LocatedImage(new_img, located_elevations.extent)
-
-def shaded_relief(ax, extents=[]):
-    """
-    After the example illustrating the automatic download of STRM data, and adding of
-    shading to create a so-called "Shaded Relief SRTM".
-
-    Originally contributed by Thomas Lecocq (http://geophysique.be).
-
-    """
-    # Define a raster source which uses the SRTM data and applies the
-    # shade function when the data is retrieved.
-    shaded_srtm = PostprocessedRasterSource(SRTM3Source(), shade)
-
-    # Add the shaded SRTM source to our map with a grayscale colormap.
-    ax.add_raster(shaded_srtm, cmap='Greys')
-
-    # This data is high resolution, so pick a small area which has some
-    # interesting orography.
-    if len(extents) == 4:
-        ax.set_extent(extents)
-    return(ax)
-
-def dem(ax, dem_cbar=False):
-    x0, xn, y0, yn = ax.get_extent()
-    elev, crs, extent = srtm.srtm_composite(np.floor(x0),np.floor(y0), np.ceil(xn-x0)+1,np.ceil(yn-y0)+1)
-
-    levels = [((elev.max()-elev.min())/whole, whole) for whole in [10,20,50,100,200,500,1000]]
-    level = min([level for level in levels if 5<level[0]<20])
-
-    plot_kwargs = dict(cmap=plt.get_cmap('Greys', level[0]),
-                       vmin=level[1]* np.floor_divide(elev.min(), level[1]),
-                       vmax=level[1]* np.floor_divide(elev.max(), level[1]))
-    dem = ax.imshow(elev, extent=extent, transform=crs, origin='lower', **plot_kwargs)
-    ax.set_extent([x0, xn, y0, yn])
-    if dem_cbar:
-        plt.colorbar(dem, ax=ax, ticks=range(int(plot_kwargs['vmin']), int(plot_kwargs['vmax']), level[1]),
-                     orientation='horizontal');
-    return(ax)
+    # shaded relief
+    def _image_url(self, tile):
+        x, y, z = tile
+        url = ('https://server.arcgisonline.com/ArcGIS/rest/services/' \
+               'World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}').format(
+               z=z, y=y, x=x)
+        return url
 
 def urban(ax, **kwargs):
     urban = cfeature.NaturalEarthFeature(category='cultural',
@@ -117,6 +83,33 @@ def choose_cmap(pos, neg):
     elif neg and pos:
         cmap="RdBu_r"
     return(cmap)
+
+def plot_contour(lat, lon, grid, ax=None, extent=None,
+                tiler=StamenTerrain(), zoom=6,
+                N=7, fontsize=10, fmt='%1.1f', **kwargs):
+    if ax is None:
+        plt.figure(figsize=(10,8))
+        ax = plt.axes(projection=ccrs.PlateCarree())
+    if extent is not None:
+        xmin, xmax, ymin, ymax = extents
+        x = lon[xmin:xmax]
+        y = lat[ymin:ymax]
+        z = grid[ymin:ymax, xmin:xmax]
+    elif lon.shape[0] != grid.shape[1]:
+        x = (lon[:-1]+lon[1:])/2.
+        y = (lat[:-1]+lat[1:])/2.
+        z = grid
+    else:
+        x = lon
+        y = lat
+        z = grid
+    CS = plt.contour(x, y, z, N, cmap='Greys', **kwargs)
+    plt.clabel(CS, inline=1, fontsize=fontsize, fmt=fmt)
+    ax.add_image(tiler, zoom)
+    gl = ax.gridlines(draw_labels=True)
+    gl.xlabels_top = False
+    gl.ylabels_right = False
+    return ax
 
 def plot_grid(lat, lon, grid, ax=None, cbar=False, interpolation='None', zorder=5, **kwargs):
     '''
@@ -150,7 +143,7 @@ def plot_grid(lat, lon, grid, ax=None, cbar=False, interpolation='None', zorder=
     ax.set_extent([lon.min(), lon.max(), lat.min(), lat.max()])
     if cbar:
         plt.colorbar(im, ax=ax)
-    return(im, ax)
+    return im, ax
 
 def windrose_cbar(fig=None):
     '''
@@ -178,17 +171,18 @@ def windrose_cbar(fig=None):
                     fontsize=min(14, y+5), fontdict = {'color': 'white'})
         n+=1
 
-def feature_locations(df, ax=None, figsize=(14,8), lat='centroidY' ,lon='centroidX',
-                    paths=False, features=True, zoom=7, zorder=5, colorby='ComplexNum', c='k'):
+def feature_locations(df, ax=None, figsize=(14,8), tiler=StamenTerrain(),
+                      lat='centroidY' ,lon='centroidX', paths=False,
+                      features=True, zoom=6, zorder=5, colorby='ComplexNum',
+                      c='k'):
     '''
     Use a computed titanized dataframe to show all the features and their paths
     '''
     if ax is None:
-        from cartopy.io.img_tiles import StamenTerrain
         plt.figure(figsize=figsize)
         ax = plt.axes(projection=ccrs.PlateCarree())
         background(ax)
-        ax.add_image(StamenTerrain(), zoom)
+        ax.add_image(tiler, zoom)
     if features:
         storm_names = dict([(n[1], n[0]) for n in enumerate(df[colorby].unique())])
         df.plot.scatter(x=lon, y=lat,
