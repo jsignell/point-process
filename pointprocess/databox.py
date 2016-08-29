@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from .common import *
+from .plotting import plot_grid
 
 class DataBox:
     def __init__(self, time, lat, lon, box):

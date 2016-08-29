@@ -33,6 +33,19 @@ def pre_shaded(ax, fname, zorder=2):
               transform=ccrs.PlateCarree(), cmap='Greys_r', zorder=zorder)
     return ax
 
+def annotate_tiler(ax, source, **kwargs):
+    """
+    source sets the annotation string.
+
+    **kwargs can be used to override defaults
+    """
+    std_kwargs = dict(xy=(0.02, 0.02), xycoords='axes fraction', zorder=10,
+                      horizontalalignment='left', verticalalignment='bottom',
+                      bbox=dict(facecolor='wheat', alpha=0.7, boxstyle='round'))
+    std_kwargs.update(kwargs)
+    ax.annotate(source, **std_kwargs)
+    return ax
+
 class ShadedReliefESRI(GoogleTiles):
     """
     I struggled for a WHILE to find a basemap tiling service that I was happy
@@ -75,7 +88,7 @@ def plot_contour(lat, lon, grid, ax=None, extent=None,
         plt.figure(figsize=(10,8))
         ax = plt.axes(projection=ccrs.PlateCarree())
     if extent is not None:
-        xmin, xmax, ymin, ymax = extents
+        xmin, xmax, ymin, ymax = extent
         x = lon[xmin:xmax]
         y = lat[ymin:ymax]
         z = grid[ymin:ymax, xmin:xmax]
@@ -93,7 +106,8 @@ def plot_contour(lat, lon, grid, ax=None, extent=None,
     ax = gridlines(ax)
     return ax
 
-def plot_grid(lat, lon, grid, ax=None, cbar=False, interpolation='None', zorder=5, **kwargs):
+def plot_grid(lat, lon, grid, ax=None, cbar=False, interpolation='None',
+              zorder=5, **kwargs):
     '''
     Simple and fast plot generation for gridded data **MUST BE RECTANGULAR**
 
@@ -169,10 +183,10 @@ def feature_locations(df, ax=None, figsize=(14,8), tiler=StamenTerrain(),
         storm_names = dict([(n[1], n[0]) for n in enumerate(df[colorby].unique())])
         df.plot.scatter(x=lon, y=lat,
                         c=[storm_names[n] for n in df[colorby]],
-                        ax=ax, cmap='rainbow',
+                        ax=ax, cmap='rainbow', yticks=[],
                         edgecolor='None', s=50, zorder=zorder)
     if paths:
         gb = df.groupby(df['ComplexNum'])
         for k,v in gb.groups.items():
             gb.get_group(k).plot(x=lon, y=lat, c=c, ax=ax, legend=None, zorder=zorder+1)
-    return(ax)
+    return ax

@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from .plotting import background
+from .plotting import background, windrose_cbar
 import pandas as pd
 import numpy as np
 
@@ -27,6 +27,7 @@ class Features:
 
         n=0
         for it, t in enumerate(self.p.items[:-1]):
+            # if there is not a feature in the next time step
             if self.p.items[it+1]- t > pd.Timedelta(minutes=5):
                 continue
             df0 = self.p.iloc[it,:,8].dropna()
