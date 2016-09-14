@@ -51,6 +51,10 @@ class Region:
         ----------
         cols: columns to include in final dataset - ['strokes', 'amplitude']
         func: functions to run on the dataset - 'grid'
+        filter_CG: False or dict indicating method and args for filtering
+                   method: {'CG', 'range', 'less_than'}
+                   amin: amplitude which CG must exceed (eg. 40)
+                   amax: amplitude which CG must be less than (eg.-10)
         y: int, or str indicating year with wildcards allowed
         m: int indicating month
         d: int indicating day
@@ -140,6 +144,10 @@ class Region:
         t: str or pd.Timestamp indicating date
         base: int indicating hours between which to take day - 12
         func: functions to run on the dataset - 'grid'
+        filter_CG: False or dict indicating method and args for filtering
+                   method: {'CG', 'range', 'less_than'}
+                   amin: amplitude which CG must exceed (eg. 40)
+                   amax: amplitude which CG must be less than (eg.-10)
 
         Returns
         -------
