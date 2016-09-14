@@ -13,7 +13,7 @@ class Region:
     DC = Diurnal Cycle
     MM = Mean Monthly
     '''
-    def __init__(self, subsetted=True, **kwargs):
+    def __init__(self, subsetted=True, opendap=False, **kwargs):
         if 'city' in kwargs:
             city = kwargs['city']
         else:
@@ -22,6 +22,7 @@ class Region:
         self.RADIUS = city['r']
         self.PATH = city['path']
         self.SUBSETTED = subsetted
+        self.OPENDAP = opendap
 
     def show(self):
         for attr in ['center', 'radius', 'path', 'subsetted']:
@@ -43,7 +44,8 @@ class Region:
             self.gridx = np.arange(minx, maxx+step, step)
             self.gridy = np.arange(miny, maxy+step, step)
 
-    def get_ds(self, cols=['strokes', 'amplitude'], func='grid', filter_CG=False, **kwargs):
+    def get_ds(self, cols=['strokes', 'amplitude'], func='grid',
+               filter_CG=False, y='*', m='*', d='*'):
         '''
         Get the dataset for the region and time (assumes function is available locally)
 
@@ -63,15 +65,6 @@ class Region:
         -------
         ds: concatenated xr.Dataset for the region and time
         '''
-        yyyy, mm, dd = ('*', '*', '*')
-        if 'y' in kwargs:
-            yyyy = str(kwargs['y'])
-        if 'm' in kwargs:
-            mm = '{mm:02d}'.format(mm=kwargs['m'])
-        if 'd' in kwargs:
-            dd = '{dd:02d}'.format(dd=kwargs['d'])
-        fname = '{y}_{m}_{d}.nc'.format(y=yyyy, m=mm, d=dd)
-
         if self.SUBSETTED:
             def preprocess_func(ds):
                 return ds[cols]
@@ -82,8 +75,38 @@ class Region:
                 bounding_box = ((ds.lat<(lat+r)) & (ds.lat>(lat-r)) &
                                 (ds.lon<(lon+r)) & (ds.lon>(lon-r)))
                 return ds[cols].where(bounding_box).dropna('record')
-        ds = xr.open_mfdataset(self.PATH+fname, concat_dim='record',
-                               preprocess=preprocess_func)
+        if self.OPENDAP:
+            if y == '*':
+                y_first = 1991
+                y_last = pd.datetime.now().year+1
+                dates = pd.date_range(str(y_first), str(y_last))
+            else:
+                dates = pd.date_range(str(y), str(y+1))
+            if m != '*':
+                dates = dates[dates.month == m]
+            if d != '*':
+                dates = dates[dates.day == d]
+            fnames = [self.to_ncfile(date, check_existence=False)
+                      for date in dates]
+            ds = xr.open_mfdataset(fnames,
+                                   concat_dim='record',
+                                   preprocess=preprocess_func)
+        else:
+            # generate wildcard notation representing
+            # yyyy, mm, dd = ('*', '*', '*')
+            # if 'y' in kwargs:
+            #     yyyy = str(kwargs['y'])
+            # if 'm' in kwargs:
+            #     mm = '{mm:02d}'.format(mm=kwargs['m'])
+            # if 'd' in kwargs:
+            #     dd = '{dd:02d}'.format(dd=kwargs['d'])
+            if m != '*':
+                m = '{mm:02d}'.format(mm=m)
+            if d != '*':
+                d = '{dd:02d}'.format(dd=d)
+            fname = '{y}_{m}_{d}.nc'.format(y=y, m=m, d=d)
+            ds = xr.open_mfdataset(self.PATH+fname, concat_dim='record',
+                                   preprocess=preprocess_func)
         if filter_CG:
             ds = filter_out_CC(ds, **filter_CG)
         if func == 'grid':
@@ -176,7 +199,7 @@ class Region:
             self.FC_grid = self.__to_grid()
 
         if func=='count':
-            count = ds0.dims.values()[0]
+            count = ds0.record.size
             ds0.close()
             return(count)
 
