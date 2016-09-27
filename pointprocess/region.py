@@ -194,6 +194,13 @@ class Region:
                 ds0 = filter_out_CC(ds0, **filter_CG)
             ds.close()
 
+        if not self.SUBSETTED:
+            lat, lon = self.CENTER
+            r = self.RADIUS
+            bounding_box = ((ds0.lat<(lat+r)) & (ds0.lat>(lat-r)) &
+                            (ds0.lon<(lon+r)) & (ds0.lon>(lon-r)))
+            ds0 = ds0.where(bounding_box).dropna('record')
+
         if func=='grid':
             self.set_x_y(ds0)
             self.FC_grid = self.__to_grid()
