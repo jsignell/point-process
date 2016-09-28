@@ -60,11 +60,15 @@ class DataBox:
         return(plot_grid(self.lat, self.lon, grid, **kwargs))
 
     def get_gauss2d(self, sigma=3):
-        from scipy import ndimage
-        gauss2d = np.array([ndimage.filters.gaussian_filter(self.box[i,:,:], sigma) for i in range(self.box.shape[0])])
+        from scipy.ndimage.filters import gaussian_filter
+        gauss2d = np.array([gaussian_filter(self.box[i,:,:], sigma) for
+                            i in range(self.box.shape[0])])
         return(gauss2d)
 
-    def centralized_difference(self, t_start=None, t_end=None, radius=15, buffer=20, save=False, **kwargs):
+    def centralized_difference(self, t_start=None, t_end=None,
+                               radius=15, buffer=20, save=False, **kwargs):
+        import matplotlib.pyplot as plt
+        import cartopy.crs as ccrs
         l =[]
         count=0
         if radius+3 < buffer:

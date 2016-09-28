@@ -102,7 +102,8 @@ def plot_contour(lat, lon, grid, ax=None, extent=None,
         z = grid
     CS = plt.contour(x, y, z, N, cmap='Greys', **kwargs)
     plt.clabel(CS, inline=1, fontsize=fontsize, fmt=fmt)
-    ax.add_image(tiler, zoom)
+    if tiler:
+        ax.add_image(tiler, zoom)
     ax = gridlines(ax)
     return ax
 
