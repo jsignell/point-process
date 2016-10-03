@@ -29,7 +29,7 @@ class Region:
             if hasattr(self, attr.upper()):
                 print('{a}: {val}'.format(a=attr, val=eval('self.'+attr.upper())))
 
-    def define_grid(self, nbins=None, step=.01, extents=[], **kwargs):
+    def define_grid(self, nbins=None, step=.01, extents=[], units='latlon'):
         if len(extents) > 0:
             minx, maxx, miny, maxy = extents
         else:
@@ -37,12 +37,22 @@ class Region:
             maxx = self.CENTER[1]+self.RADIUS
             miny = self.CENTER[0]-self.RADIUS
             maxy = self.CENTER[0]+self.RADIUS
+        if units == 'km':
+            from geopy.distance import vincenty
+            ulc = (self.CENTER[0], minx)
+            urc = (self.CENTER[0], maxx)
+            llc = (miny, self.CENTER[1])
+            lrc = (maxy, self.CENTER[1])
+            stepx = (maxx-minx)*step/vincenty(ulc, urc).km
+            stepy = (maxy-miny)*step/vincenty(ulc, llc).km
+        else:
+            stepx = stepy = step
         if nbins:
             self.gridx = np.linspace(minx, maxx, nbins)
             self.gridy = np.linspace(miny, maxy, nbins)
         else:
-            self.gridx = np.arange(minx, maxx+step, step)
-            self.gridy = np.arange(miny, maxy+step, step)
+            self.gridx = np.arange(minx, maxx+stepx, stepx)
+            self.gridy = np.arange(miny, maxy+stepy, stepy)
 
     def get_ds(self, cols=['strokes', 'amplitude'], func='grid',
                filter_CG=False, y='*', m='*', d='*'):
