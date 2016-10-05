@@ -433,13 +433,13 @@ class Region:
             for ll, tt in zip(little_loc[1:], little_t_diff[1:]):
                 if (ll == little_loc[0]).all():
                     continue
-                dist = great_circle(little_loc[0], l).km
+                dist = great_circle(little_loc[0], ll).km
                 if dist < dist_window:
                     hours = (int(tt)/10e8/60/60.)
                     t_diffs.append(hours)
                     dists.append(dist)
                     speeds.append(dist/hours)
-                    bearings.append(calculate_bearing(little_loc[0], l))
+                    bearings.append(calculate_bearing(little_loc[0], ll))
 
         df = pd.DataFrame({'speed': speeds, 'direction':bearings})
 
