@@ -426,16 +426,16 @@ class Region:
         t_diffs = []
         for t in time:
             t_diff = time-t
-            bool_a = np.where((zero_time <= t_diff) & (t_diff< t_window))
+            bool_a = np.where((zero_time < t_diff) & (t_diff< t_window))
 
             little_loc = np.take(loc, bool_a, axis=0)[0]
             little_t_diff = np.take(t_diff, bool_a)[0]
-            for l, t in zip(little_loc[1:], little_t_diff[1:]):
-                if (l == little_loc[0]).all():
+            for ll, tt in zip(little_loc[1:], little_t_diff[1:]):
+                if (ll == little_loc[0]).all():
                     continue
                 dist = great_circle(little_loc[0], l).km
                 if dist < dist_window:
-                    hours = (int(t)/10e8/60/60.)
+                    hours = (int(tt)/10e8/60/60.)
                     t_diffs.append(hours)
                     dists.append(dist)
                     speeds.append(dist/hours)
