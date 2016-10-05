@@ -399,7 +399,7 @@ class Region:
                                        dist_window=20, max_speed=200,
                                        windrose=True, **kwargs):
         '''
-        Calculate the conditional rate of occurence of lightning strikes
+        Calculate the conditional rate of occurence
 
         Parameters
         ----------
@@ -418,7 +418,7 @@ class Region:
         lon = ds.lon.values
         lat = ds.lat.values
         time = ds.time.values
-        loc = np.stack([lon, lat]).T
+        loc = np.stack([lat, lon]).T
 
         dists = []
         bearings = []

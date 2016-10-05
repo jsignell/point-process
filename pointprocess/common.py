@@ -61,8 +61,9 @@ def calculate_bearing(pointA, pointB):
           cos(lat1).sin(lat2) − sin(lat1).cos(lat2).cos(Δlong))
     """
     from math import radians, cos, sin, atan2, degrees
-
-    (lon1, lat1), (lon2, lat2) = pointA, pointB
+    (lat1, lon1), (lat2, lon2) = pointA, pointB
+    if lon1 == lon2 and lat1 == lat2:
+        return None
 
     # convert decimal degrees to radians
     lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
