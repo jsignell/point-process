@@ -95,7 +95,8 @@ class Features:
 
         df = speed.to_frame().join(bearing)
 
-        srange = zip([0,5,10,20,50], [5,10,20,50,100], ['#0000dd','green','#dddd00','#FF7800','#dd0000'])
+        srange = zip([0,5,10,20,50], [5,10,20,50,100],
+                     ['#0000dd','green','#dddd00','#FF7800','#dd0000'])
         ntot = df['bearing'].count()
 
         radii0 = [bottom]*N
@@ -109,29 +110,6 @@ class Features:
         if cbar:
             windrose_cbar(**cbar_kwargs)
         return(ax)
-
-#     def get_storm_tracks(self, time=None):
-#         p = self.p
-#         tracks = []
-#         for it in range(p.shape[0]-1):
-#             try:
-#                 df0 = p[self.databox.time[it],:,['centroidX', 'centroidY', 'Forecast']].dropna()
-#                 df1 = p[self.databox.time[it+1],:,['centroidX', 'centroidY', 'Observed']].dropna()
-#             except:
-#                 continue
-#             df0.index = df0['Forecast']
-#             df1.index = df1['Observed']
-#             df = df0.join(df1, lsuffix='_start', rsuffix='_end').dropna(how='any')
-#             tracks.append(df)
-#         return(tracks)
-
-#     def plot_storm_tracks(self, ax, c='red', zorder=10):
-#         p = self.p
-#         tracks = self.get_storm_tracks()
-#         for i in range(len(tracks)-1):
-#             for ifeat in range(tracks[i].shape[0]):
-#                 ax.plot(tracks[i].iloc[ifeat,[0,3]].values, tracks[i].iloc[ifeat,[1,4]].values, c=c, zorder=zorder)
-#         return(ax)
 
     def get_dirs4(self):
         p = self.p
@@ -148,32 +126,8 @@ class Features:
             n+=1
         self.dirs4 = dirs4
 
-    # def get_dirs8(self):
-    #     p = self.p
-    #     n = [-15, 15, 'North']
-    #     ne = [30, 60, 'North East']
-    #     e = [75, 105, 'East']
-    #     se = [120, 150, 'South East']
-    #     s = [165, -165, 'South']
-    #     sw = [-150, -120, 'South West']
-    #     w = [-105, -75, 'West']
-    #     nw = [-60, -30, 'North West']
-    #     dirs8 = [nw, n, ne, w, None, e, sw, s, se]
-    #     n = 1
-    #     for i, b in enumerate(dirs8):
-    #         if i == 4:
-    #             n+=1
-    #             continue
-    #         elif i == 7:
-    #             bool_array = ((p[:,:,'Bearing']>b[0]) | (p[:,:,'Bearing']<b[1]))
-    #         else:
-    #             bool_array = ((p[:,:,'Bearing']>b[0]) & (p[:,:,'Bearing']<b[1]))
-    #         b.append(bool_array)
-    #         b.append(n)
-    #         n+=1
-    #     self.dirs8 = dirs8
-
-    def get_lon_lat(self, b, pos=False, neg=False, metrics=['area', 'Intensity0.9', 'Intensity0.25']):
+    def get_lon_lat(self, b, pos=False, neg=False,
+                    metrics=['area', 'Intensity0.9', 'Intensity0.25']):
         p = self.p
         lon=p[:,:,'centroidX'][b[3]].stack().values
         lat=p[:,:,'centroidY'][b[3]].stack().values
@@ -209,7 +163,8 @@ class Features:
         elif neg and pos:
             return(pos_lon, pos_lat, neg_lon, neg_lat, np.mean(dist))
 
-    def plot_kde(self, pos, neg, lon=None, lat=None, metrics=['area', 'Intensity0.9', 'Intensity0.25'], **kwargs):
+    def plot_kde(self, pos, neg, lon=None, lat=None,
+                 metrics=['area', 'Intensity0.9', 'Intensity0.25'], **kwargs):
         import cartopy.crs as ccrs
         from plotting import choose_cmap, background, urban
         fig = plt.figure(figsize=(12,8))

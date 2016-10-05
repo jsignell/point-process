@@ -50,3 +50,33 @@ def filter_out_CC(ds, method='range', amax=0, amin=10):
                         (ds['amplitude']>amin)).dropna('record')
     elif method == 'less_than':
         return ds.where(ds['amplitude']<amax).dropna('record')
+
+def calculate_bearing(pointA, pointB):
+    """
+    Modified from: https://gist.github.com/jeromer/2005586
+    Calculate the great circle distance between two points
+    on the earth (specified in decimal degrees)
+    And the bearing in
+    θ = atan2(sin(Δlong).cos(lat2),
+          cos(lat1).sin(lat2) − sin(lat1).cos(lat2).cos(Δlong))
+    """
+    from math import radians, cos, sin, atan2, degrees
+
+    (lon1, lat1), (lon2, lat2) = pointA, pointB
+
+    # convert decimal degrees to radians
+    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+    dlon = lon2 - lon1
+
+    x = sin(dlon) * cos(lat2)
+    y = cos(lat1) * sin(lat2) - (sin(lat1) * cos(lat2) * cos(dlon))
+
+    initial_bearing = atan2(x, y)
+
+    # Now we have the initial bearing but math.atan2 return values
+    # from -180° to + 180° which is not what we want for a compass bearing
+    # The solution is to normalize the initial bearing as shown below
+    initial_bearing = degrees(initial_bearing)
+    compass_bearing = (initial_bearing + 360) % 360
+
+    return compass_bearing

@@ -393,3 +393,69 @@ class Region:
     def to_databox(self, box, tr):
         lon, lat = np.meshgrid(self.gridx[0:-1], self.gridy[0:-1])
         return DataBox(tr, lat, lon, box)
+
+    def conditional_rate_of_occurrence(self, ds,
+                                       t_window=pd.Timedelta(minutes=15),
+                                       dist_window=20, max_speed=200,
+                                       windrose=True, **kwargs):
+        '''
+        Calculate the conditional rate of occurence of lightning strikes
+
+        Parameters
+        ----------
+        ds: dataset with coordinates lat, lon, and time
+        t_window: pd.Timedelta of time window used to check for occurrences
+        dist_window: radius in km of window in which to check for occurrences
+        max_speed: max speed in km/hr to include in windrose
+        windrose: bool indicating whether or not too plot windrose
+        **kwargs: passed on to windrose function
+        '''
+        from geopy.distance import vincenty, great_circle
+
+        zero_time = pd.Timedelta(seconds=0).asm8
+        t_window = t_window.asm8
+
+        lon = ds.lon.values
+        lat = ds.lat.values
+        time = ds.time.values
+        loc = np.stack([lon, lat]).T
+
+        dists = []
+        bearings = []
+        speeds = []
+        t_diffs = []
+        for t in time:
+            t_diff = time-t
+            bool_a = np.where((zero_time <= t_diff) & (t_diff< t_window))
+
+            little_loc = np.take(loc, bool_a, axis=0)[0]
+            little_t_diff = np.take(t_diff, bool_a)[0]
+            for l, t in zip(little_loc[1:], little_t_diff[1:]):
+                if (l == little_loc[0]).all():
+                    continue
+                dist = great_circle(little_loc[0], l).km
+                if dist < dist_window:
+                    hours = (int(t)/10e8/60/60.)
+                    t_diffs.append(hours)
+                    dists.append(dist)
+                    speeds.append(dist/hours)
+                    bearings.append(calculate_bearing(little_loc[0], l))
+
+        df = pd.DataFrame({'speed': speeds, 'direction':bearings})
+
+        if not windrose:
+            return df
+        else:
+            from windrose import WindroseAxes
+
+            df = df[df['speed'].abs()<max_speed]
+            ax = WindroseAxes.from_ax()
+            ax.bar(df['direction'], df['speed'],
+                   bins=kwargs.pop('bins', np.arange(0, max_speed, 20)),
+                   normed=kwargs.pop('normed', True),
+                   opening=kwargs.pop('opening', 0.9),
+                   edgecolor=kwargs.pop('edgecolor', 'white'),
+                   **kwargs)
+            ax.set_legend()
+
+            return ax
