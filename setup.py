@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='pointprocess',
-      version='0.3.2',
+      version='0.3.3',
       description='Tools for reading ungridded point process data',
       url='http://github.com/jsignell/point-process',
       author='Julia Signell',

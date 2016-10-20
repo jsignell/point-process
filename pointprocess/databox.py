@@ -5,20 +5,85 @@ from .plotting import plot_grid
 
 class DataBox:
     def __init__(self, time, lat, lon, box):
-        nt, ny, nx = box.shape
-        if time.shape == nt or len(time) == nt:
+        self.nt, self.ny, self.nx = box.shape
+        if time.shape == self.nt or len(time) == self.nt:
             self.time = time
+            self.t_edge = False
+        elif time.shape == (self.nt+1) or len(time) == (self.nt+1):
+            self.time = time
+            self.t_edge = True
         else:
             print('check time')
-        if lat.shape == (ny, nx):
-            self.lat = lat
-            self.lon = lon
+        if lat.shape == (self.ny, self.nx):
+            self.dims = 2
+        elif lat.shape == (self.ny):
+            self.dims = 1
+            self.l_edge = False
+            self.get_X()
+        elif lat.shape == (self.ny+1):
+            self.dims = 1
+            self.l_edge = True
+            self.get_X()
         else:
             print('check lat, lon')
+        self.lat = lat
+        self.lon = lon
         self.box = box
+
+    def get_X(self):
+        if self.dims == 2:
+            return
+        if self.l_edge:
+            xx, yy = np.meshgrid(self.lon[1:], self.lat[1:])
+        else:
+            xx, yy = np.meshgrid(self.lon, self.lat)
+        xx = xx.flatten()
+        yy = yy.flatten()
+        self.X = np.stack([yy, xx])
 
     def show(self):
         print('DataBox of shape: {shape}'.format(shape=self.box.shape))
+
+    def get_l(self, x):
+        '''
+        Given a latlon position, return the 1D and 2D index
+        of the corresponding grid cell. Also works on series
+        of positions
+
+        Parameters
+        ----------
+        x: (lat, lon) where lat, lon are floats or series
+        grid_lat: list of the lat edges of the y grid cells
+        grid_lon: list of the lon edges of the x grid cells
+
+        Returns
+        -------
+        yloc, xloc, l: tuple of integers or tuple of series
+
+        Examples
+        --------
+        # for one position
+        db.get_l((df.lat[0], df.lon[0]))
+
+        df.assign(**dict(list(zip(['yloc', 'xloc', 'l'],
+                                  db.get_l((df.lat, df.lon))
+        '''
+        if self.dims == 2:
+            return
+        def get_loc(ll, grid_ll):
+            if ll<grid_ll[-1] and ll>grid_ll[0]:
+                return np.argmax(grid_ll>ll)
+            else:
+                return np.nan
+        lat, lon = x
+        if hasattr(lat, '__iter__'):
+            yloc = lat.apply(get_loc, grid_ll=self.lat)
+            xloc = lon.apply(get_loc, grid_ll=self.lon)
+        else:
+            yloc = get_loc(lat, self.lat)
+            xloc = get_loc(lon, self.lat)
+        l = (yloc-1)*(grid_lon.shape[0]-1)+(xloc-1)
+        return yloc, xloc, l
 
     def flat_plot(self):
         import matplotlib.pyplot as plt

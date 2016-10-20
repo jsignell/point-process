@@ -43,13 +43,13 @@ def smooth_grid(grid, sigma=3, **kwargs):
 
 def filter_out_CC(ds, method='range', amax=0, amin=10):
     if method == 'CG':
-        return ds.where((ds['cloud_ground'] == b'G') |
-                        (ds['cloud_ground'] == 'G')).dropna('record')
+        return ds.isel(record=((ds['cloud_ground'] == b'G') |
+                               (ds['cloud_ground'] == 'G')))
     elif method == 'range':
-        return ds.where((ds['amplitude']<amax) |
-                        (ds['amplitude']>amin)).dropna('record')
+        return ds.isel(record=((ds['amplitude']<amax) |
+                               (ds['amplitude']>amin)))
     elif method == 'less_than':
-        return ds.where(ds['amplitude']<amax).dropna('record')
+        return ds.isel(record=(ds['amplitude']<amax))
 
 def calculate_bearing(pointA, pointB):
     """

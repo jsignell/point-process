@@ -84,7 +84,7 @@ class Region:
                 r = self.RADIUS
                 bounding_box = ((ds.lat<(lat+r)) & (ds.lat>(lat-r)) &
                                 (ds.lon<(lon+r)) & (ds.lon>(lon-r)))
-                return ds[cols].where(bounding_box).dropna('record')
+                return ds[cols].isel(record=bounding_box)
         if self.OPENDAP:
             if y == '*':
                 y_first = 1991
@@ -199,7 +199,7 @@ class Region:
             ds = xr.concat([xr.open_dataset(f) for f in L], dim='record')
             UTC12 = [np.datetime64(day) for day in pd.date_range(start=t, periods=2)]
 
-            ds0 = ds.where((ds.time>UTC12[0]) & (ds.time<UTC12[1])).dropna('record')
+            ds0 = ds.isel(record=((ds.time>UTC12[0]) & (ds.time<UTC12[1])))
             if filter_CG:
                 ds0 = filter_out_CC(ds0, **filter_CG)
             ds.close()
@@ -209,7 +209,7 @@ class Region:
             r = self.RADIUS
             bounding_box = ((ds0.lat<(lat+r)) & (ds0.lat>(lat-r)) &
                             (ds0.lon<(lon+r)) & (ds0.lon>(lon-r)))
-            ds0 = ds0.where(bounding_box).dropna('record')
+            ds0 = ds0.isel(record=bounding_box)
 
         if func=='grid':
             self.set_x_y(ds0)
@@ -233,13 +233,16 @@ class Region:
         for n in thresh:
             area.update({n: (self.FC_grid>=n).sum()})
         if print_out:
-            print('\n'.join(['Area exceeding {thresh} strikes: {area} km^2'.format(thresh=n, area=area[n]) for n in thresh]))
+            print('\n'.join([('Area exceeding {thresh} strikes: {area} '
+                              'km^2').format(thresh=n, area=area[n]) for
+                              n in thresh]))
         if return_dict:
             return(area)
 
     def get_daily_grid_slices(self, t, base=12, **kwargs):
         '''
-        For the pre-defined grid, use indicated frequency to also bin along the time dimension
+        For the pre-defined grid, use indicated frequency to also bin along
+        the time dimension
 
         Parameter
         --------
@@ -349,10 +352,10 @@ class Region:
             ds = xr.concat([xr.open_dataset(f) for f in little_fnames],
                            dim='record')
             UTC12 = [np.datetime64(t) for t in little_tr]
-            first = ds.where((ds.time>UTC12[0]) &
-                             (ds.time<UTC12[1])).dropna('record').record.shape[0]
-            second = ds.where((ds.time>UTC12[1]) &
-                             (ds.time<UTC12[2])).dropna('record').record.shape[0]
+            first = ds.isel(record=((ds.time>UTC12[0]) &
+                                    (ds.time<UTC12[1]))).record.shape[0]
+            second = ds.isel(record=((ds.time>UTC12[1]) &
+                                     (ds.time<UTC12[2]))).record.shape[0]
             d.update({pd.Timestamp(UTC12[0]): first})
             d.update({pd.Timestamp(UTC12[1]): second})
             ds.close()
