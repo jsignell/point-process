@@ -1,3 +1,4 @@
+# coding: utf-8 
 import os
 import pandas as pd
 
@@ -52,14 +53,14 @@ def filter_out_CC(ds, method='range', amax=0, amin=10):
         return ds.isel(record=(ds['amplitude']<amax))
 
 def calculate_bearing(pointA, pointB):
-    """
+    '''
     Modified from: https://gist.github.com/jeromer/2005586
     Calculate the great circle distance between two points
     on the earth (specified in decimal degrees)
     And the bearing in
-    θ = atan2(sin(Δlong).cos(lat2),
-          cos(lat1).sin(lat2) − sin(lat1).cos(lat2).cos(Δlong))
-    """
+    theta = atan2(sin(delta_long).cos(lat2),
+          cos(lat1).sin(lat2) − sin(lat1).cos(lat2).cos(delta_long))
+    '''
     from math import radians, cos, sin, atan2, degrees
     (lat1, lon1), (lat2, lon2) = pointA, pointB
     if lon1 == lon2 and lat1 == lat2:
@@ -75,7 +76,7 @@ def calculate_bearing(pointA, pointB):
     initial_bearing = atan2(x, y)
 
     # Now we have the initial bearing but math.atan2 return values
-    # from -180° to + 180° which is not what we want for a compass bearing
+    # from -180 to + 180 which is not what we want for a compass bearing
     # The solution is to normalize the initial bearing as shown below
     initial_bearing = degrees(initial_bearing)
     compass_bearing = (initial_bearing + 360) % 360
