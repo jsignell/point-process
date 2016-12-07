@@ -399,7 +399,8 @@ class Region:
 
     def conditional_rate_of_occurrence(self, ds,
                                        t_window=pd.Timedelta(minutes=15),
-                                       dist_window=20, max_speed=200,
+                                       symmetric_t_window=False,
+                                       dist_window=20, dim='speed', max_dim=200,
                                        windrose=True, **kwargs):
         '''
         Calculate the conditional rate of occurence
@@ -408,15 +409,19 @@ class Region:
         ----------
         ds: dataset with coordinates lat, lon, and time
         t_window: pd.Timedelta of time window used to check for occurrences
+        symmetric_t_window: bool indicating whether to look backwards in time
         dist_window: radius in km of window in which to check for occurrences
-        max_speed: max speed in km/hr to include in windrose
-        windrose: bool indicating whether or not too plot windrose
+        dim: str dimension to pass to windrose -- 'speed' or 'dist'
+        max_dim: max dim to include in windrose can be set to None
+        windrose: bool indicating whether or not to plot windrose
         **kwargs: passed on to windrose function
         '''
         from geopy.distance import vincenty, great_circle
 
         zero_time = pd.Timedelta(seconds=0).asm8
-        t_window = t_window.asm8
+
+        if symmetric_t_window:
+            t_window = t_window.asm8/2
 
         lon = ds.lon.values
         lat = ds.lat.values
@@ -428,8 +433,11 @@ class Region:
         speeds = []
         t_diffs = []
         for t in time:
-            t_diff = time-t
-            bool_a = np.where((zero_time < t_diff) & (t_diff< t_window))
+            if symmetric_t_window:
+                t_diff = np.abs(time-t)
+            else:
+                t_diff = time-t
+            bool_a = np.where((zero_time < t_diff) & (t_diff < t_window))
 
             little_loc = np.take(loc, bool_a, axis=0)[0]
             little_t_diff = np.take(t_diff, bool_a)[0]
@@ -443,18 +451,20 @@ class Region:
                     dists.append(dist)
                     speeds.append(dist/hours)
                     bearings.append(calculate_bearing(little_loc[0], ll))
-
-        df = pd.DataFrame({'speed': speeds, 'direction':bearings})
+        df = pd.DataFrame({'speed':speeds, 'dist':dists, 'direction':bearings})
 
         if not windrose:
             return df
         else:
             from windrose import WindroseAxes
 
-            df = df[df['speed'].abs()<max_speed]
+            if max_dim is not None:
+                df = df[df[dim].abs() < max_dim]
+            max_dim = max_dim or df[dim].abs().max()
+
             ax = WindroseAxes.from_ax()
-            ax.bar(df['direction'], df['speed'],
-                   bins=kwargs.pop('bins', np.arange(0, max_speed, 20)),
+            ax.bar(df['direction'], df[dim],
+                   bins=kwargs.pop('bins', np.arange(0, max_dim, 20)),
                    normed=kwargs.pop('normed', True),
                    opening=kwargs.pop('opening', 0.9),
                    edgecolor=kwargs.pop('edgecolor', 'white'),

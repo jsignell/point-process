@@ -1,0 +1,13 @@
+name: point-process
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - cartopy
+  - geopy
+  - matplotlib
+  - numpy
+  - pandas
+  - xarray
+  - pip:
+    - windrose
