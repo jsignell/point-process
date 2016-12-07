@@ -455,7 +455,7 @@ class Region:
                     bearings.append(calculate_bearing(little_loc[0], ll))
         df = pd.DataFrame({'speed':speeds, 'dist':dists, 'hours': t_diffs, 'direction':bearings})
         if dim == 'minutes':
-            df = df.assign(minutes=df.hours/60.)
+            df = df.assign(minutes=df.hours*60)
         if not windrose:
             return df
         else:
