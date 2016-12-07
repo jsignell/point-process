@@ -419,9 +419,10 @@ class Region:
         from geopy.distance import vincenty, great_circle
 
         zero_time = pd.Timedelta(seconds=0).asm8
+        t_window = t_window.asm8
 
         if symmetric_t_window:
-            t_window = t_window.asm8/2
+            t_window = t_window/2
 
         lon = ds.lon.values
         lat = ds.lat.values
