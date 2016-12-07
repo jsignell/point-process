@@ -411,7 +411,8 @@ class Region:
         t_window: pd.Timedelta of time window used to check for occurrences
         symmetric_t_window: bool indicating whether to look backwards in time
         dist_window: radius in km of window in which to check for occurrences
-        dim: str dimension to pass to windrose -- 'speed' or 'dist'
+        dim: str dimension to pass to windrose
+             -- 'speed', 'dist', 'hours', or 'minutes'
         max_dim: max dim to include in windrose can be set to None
         windrose: bool indicating whether or not to plot windrose
         **kwargs: passed on to windrose function
@@ -452,7 +453,7 @@ class Region:
                     dists.append(dist)
                     speeds.append(dist/hours)
                     bearings.append(calculate_bearing(little_loc[0], ll))
-        df = pd.DataFrame({'speed':speeds, 'dist':dists, 'hours': hours, 'direction':bearings})
+        df = pd.DataFrame({'speed':speeds, 'dist':dists, 'hours': t_diffs, 'direction':bearings})
         if dim == 'minutes':
             df = df.assign(minutes=df.hours/60.)
         if not windrose:
