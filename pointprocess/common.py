@@ -1,9 +1,10 @@
-# coding: utf-8 
 import os
 import pandas as pd
 
+
 def to_decimal(degree, minute, second):
     return(degree+(minute/60.)+(second/3600.))
+
 
 def fix_t(t, base):
     t = pd.Timestamp(t)
@@ -11,21 +12,24 @@ def fix_t(t, base):
         t += pd.DateOffset(hours=base)
     return(t)
 
+
 def import_r_tools(filename='r-tools.R'):
     from rpy2.robjects import pandas2ri, r, globalenv
     from rpy2.robjects.packages import STAP
     pandas2ri.activate()
     path = os.path.dirname(os.path.realpath(__file__))
-    with open(os.path.join(path,filename), 'r') as f:
+    with open(os.path.join(path, filename), 'r') as f:
         string = f.read()
     rfuncs = STAP(string, "rfuncs")
     return rfuncs
+
 
 def dotvars(**kwargs):
     res = {}
     for k, v in kwargs.items():
         res[k.replace('_', '.')] = v
     return res
+
 
 def get_fsizes(fnames, tr):
     fsizes = []
@@ -38,19 +42,31 @@ def get_fsizes(fnames, tr):
     s = s.sort_values(ascending=False)
     return s
 
+
 def smooth_grid(grid, sigma=3, **kwargs):
     from scipy.ndimage.filters import gaussian_filter
     return gaussian_filter(grid, sigma, **kwargs)
 
+
 def filter_out_CC(ds, method='range', amax=0, amin=10):
+    '''
+    Filter out Cloud-to-Cloud lightning
+
+    Paramters:
+    ds: dataset containing lightning strikes
+    method: filter method: ['CG', 'range', 'less_than']
+    amin: amplitude which CG must exceed (eg. 40)
+    amax: amplitude which CG must be less than (eg.-10)
+    '''
     if method == 'CG':
         return ds.isel(record=((ds['cloud_ground'] == b'G') |
                                (ds['cloud_ground'] == 'G')))
     elif method == 'range':
-        return ds.isel(record=((ds['amplitude']<amax) |
-                               (ds['amplitude']>amin)))
+        return ds.isel(record=((ds['amplitude'] < amax) |
+                               (ds['amplitude'] > amin)))
     elif method == 'less_than':
-        return ds.isel(record=(ds['amplitude']<amax))
+        return ds.isel(record=(ds['amplitude'] < amax))
+
 
 def calculate_bearing(pointA, pointB):
     '''

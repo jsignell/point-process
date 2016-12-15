@@ -6,6 +6,7 @@ from .plotting import plot_grid, plot_contour
 from .common import *
 from .databox import DataBox
 
+
 class Region:
     '''
     Acronyms:
@@ -13,7 +14,7 @@ class Region:
     DC = Diurnal Cycle
     MM = Mean Monthly
     '''
-    def __init__(self, subsetted=True, opendap=False, **kwargs):
+    def __init__(self, subsetted=True, **kwargs):
         if 'city' in kwargs:
             city = kwargs['city']
         else:
@@ -22,14 +23,28 @@ class Region:
         self.RADIUS = city['r']
         self.PATH = city['path']
         self.SUBSETTED = subsetted
-        self.OPENDAP = opendap
 
     def show(self):
         for attr in ['center', 'radius', 'path', 'subsetted']:
             if hasattr(self, attr.upper()):
-                print('{a}: {val}'.format(a=attr, val=eval('self.'+attr.upper())))
+                print('{a}: {val}'.format(a=attr,
+                                          val=eval('self.'+attr.upper())))
 
     def define_grid(self, nbins=None, step=.01, extents=[], units='latlon'):
+        '''
+        Define the grid over which to aggregate data. Specify nbins or step.
+
+        Parameters
+        ----------
+        nbins: number of bins used in x and y dimensions
+        step: 1D number of units in each bin -- ignored if nbins is set
+        extents: [minx, maxx, miny, maxy] in latlon defining corners of grid
+        units: units of step (ignored if nbins is specified)-- ['km', 'latlon']
+
+        Returns
+        -------
+        sets self.gridx and self.gridy to 1D arrays of bin edges in latlon
+        '''
         if len(extents) > 0:
             minx, maxx, miny, maxy = extents
         else:
@@ -57,7 +72,7 @@ class Region:
     def get_ds(self, cols=['strokes', 'amplitude'], func='grid',
                filter_CG=False, y='*', m='*', d='*'):
         '''
-        Get the dataset for the region and time (assumes function is available locally)
+        Get the dataset for the region and time
 
         Parameters
         ----------
@@ -82,62 +97,42 @@ class Region:
             def preprocess_func(ds):
                 lat, lon = self.CENTER
                 r = self.RADIUS
-                bounding_box = ((ds.lat<(lat+r)) & (ds.lat>(lat-r)) &
-                                (ds.lon<(lon+r)) & (ds.lon>(lon-r)))
+                bounding_box = ((ds.lat < (lat + r)) & (ds.lat > (lat - r)) &
+                                (ds.lon < (lon + r)) & (ds.lon > (lon - r)))
                 return ds[cols].isel(record=bounding_box)
-        if self.OPENDAP:
-            if y == '*':
-                y_first = 1991
-                y_last = pd.datetime.now().year+1
-                dates = pd.date_range(str(y_first), str(y_last))
-            else:
-                dates = pd.date_range(str(y), str(y+1))
-            if m != '*':
-                dates = dates[dates.month == m]
-            if d != '*':
-                dates = dates[dates.day == d]
-            fnames = [self.to_ncfile(date, check_existence=False)
-                      for date in dates]
-            ds = xr.open_mfdataset(fnames,
-                                   concat_dim='record',
-                                   preprocess=preprocess_func)
-        else:
-            # generate wildcard notation representing
-            # yyyy, mm, dd = ('*', '*', '*')
-            # if 'y' in kwargs:
-            #     yyyy = str(kwargs['y'])
-            # if 'm' in kwargs:
-            #     mm = '{mm:02d}'.format(mm=kwargs['m'])
-            # if 'd' in kwargs:
-            #     dd = '{dd:02d}'.format(dd=kwargs['d'])
-            if m != '*':
-                m = '{mm:02d}'.format(mm=m)
-            if d != '*':
-                d = '{dd:02d}'.format(dd=d)
-            fname = '{y}_{m}_{d}.nc'.format(y=y, m=m, d=d)
-            ds = xr.open_mfdataset(self.PATH+fname, concat_dim='record',
-                                   preprocess=preprocess_func)
+        if m != '*':
+            m = '{mm:02d}'.format(mm=m)
+        if d != '*':
+            d = '{dd:02d}'.format(dd=d)
+        fname = '{y}_{m}_{d}.nc'.format(y=y, m=m, d=d)
+        ds = xr.open_mfdataset(self.PATH+fname, concat_dim='record',
+                               preprocess=preprocess_func)
         if filter_CG:
             ds = filter_out_CC(ds, **filter_CG)
         if func == 'grid':
-            self.set_x_y(ds)
+            self.__set_x_y(ds)
             self.FC_grid = self.__to_grid()
         return ds
 
-    def set_x_y(self, ds):
+    def __set_x_y(self, ds):
         self.x = ds.lon.values
         self.y = ds.lat.values
 
     def __to_grid(self, group=None, **kwargs):
         if hasattr(group, '__iter__'):
-            grid, _, _ = np.histogram2d(self.x[group], self.y[group], bins=[self.gridx, self.gridy], **kwargs)
+            grid, _, _ = np.histogram2d(self.x[group], self.y[group],
+                                        bins=[self.gridx, self.gridy],
+                                        **kwargs)
         else:
-            grid, _, _ = np.histogram2d(self.x, self.y, bins=[self.gridx, self.gridy], **kwargs)
+            grid, _, _ = np.histogram2d(self.x, self.y,
+                                        bins=[self.gridx, self.gridy],
+                                        **kwargs)
         return grid.T
 
     def to_DC_grid(self, ds):
         '''
-        Count the number of lightning strikes in each grid cell at each hour of the day
+        Count the number of lightning strikes in each grid cell at each hour
+        of the day
 
         Parameters
         ----------
@@ -148,7 +143,7 @@ class Region:
         self.DC_grid: dictionary of gridded FC for each hour of the day
         '''
         if not hasattr(self, 'x'):
-            self.set_x_y(ds)
+            self.__set_x_y(ds)
         gb = ds.groupby('time.hour')
         d = {}
         for k, v in gb.groups.items():
@@ -157,7 +152,7 @@ class Region:
 
     def to_ncfile(self, t, check_existence=True, full_path=True):
         t = pd.Timestamp(t)
-        fname = str(t.date()).replace('-','_')+'.nc'
+        fname = str(t.date()).replace('-', '_')+'.nc'
         if check_existence:
             if not os.path.isfile(self.PATH+fname):
                 return
@@ -176,7 +171,7 @@ class Region:
         ----------
         t: str or pd.Timestamp indicating date
         base: int indicating hours between which to take day - 12
-        func: functions to run on the dataset - 'grid'
+        func: functions to run on the dataset - ['grid', 'count', 'max']
         filter_CG: False or dict indicating method and args for filtering
                    method: {'CG', 'range', 'less_than'}
                    amin: amplitude which CG must exceed (eg. 40)
@@ -184,7 +179,13 @@ class Region:
 
         Returns
         -------
-        ds: concatenated xr.Dataset for the region and day
+        if func == 'grid':
+            ds: concatenated xr.Dataset for the region and day, and
+                sets self.FC_grid
+        if func == 'count':
+            count: int, total flash count
+        if func == 'max':
+            max: int, max flash count in a grid cell
         '''
         t = fix_t(t, base)
         if base == 0:
@@ -192,14 +193,15 @@ class Region:
         else:
             L = list(filter(None, [self.to_ncfile(day) for
                                    day in [t, t+pd.DateOffset(1)]]))
-            if len(L)==0:
-                if func=='count':
+            if len(L) == 0:
+                if func == 'count':
                     return 0
                 return
             ds = xr.concat([xr.open_dataset(f) for f in L], dim='record')
-            UTC12 = [np.datetime64(day) for day in pd.date_range(start=t, periods=2)]
+            UTC12 = [np.datetime64(day) for day in pd.date_range(start=t,
+                                                                 periods=2)]
 
-            ds0 = ds.isel(record=((ds.time>UTC12[0]) & (ds.time<UTC12[1])))
+            ds0 = ds.isel(record=((ds.time > UTC12[0]) & (ds.time < UTC12[1])))
             if filter_CG:
                 ds0 = filter_out_CC(ds0, **filter_CG)
             ds.close()
@@ -207,37 +209,52 @@ class Region:
         if not self.SUBSETTED:
             lat, lon = self.CENTER
             r = self.RADIUS
-            bounding_box = ((ds0.lat<(lat+r)) & (ds0.lat>(lat-r)) &
-                            (ds0.lon<(lon+r)) & (ds0.lon>(lon-r)))
+            bounding_box = ((ds0.lat < (lat + r)) & (ds0.lat > (lat - r)) &
+                            (ds0.lon < (lon + r)) & (ds0.lon > (lon - r)))
             ds0 = ds0.isel(record=bounding_box)
 
-        if func=='grid':
-            self.set_x_y(ds0)
+        if func == 'grid':
+            self.__set_x_y(ds0)
             self.FC_grid = self.__to_grid()
 
-        if func=='count':
+        elif func == 'count':
             count = ds0.record.size
             ds0.close()
-            return(count)
+            return count
 
-        if func=='max':
-            self.set_x_y(ds0)
+        elif func == 'max':
+            self.__set_x_y(ds0)
             self.FC_grid = self.__to_grid()
             ds0.close()
-            return(self.FC_grid.max())
+            return self.FC_grid.max()
 
-        return(ds0)
+        return ds0
 
-    def area_over_thresh(self, thresh=[1,2,5], print_out=True, return_dict=False):
+    def area_over_thresh(self, thresh=[1, 2, 5],
+                         print_out=True, return_dict=False):
+        '''
+        Number of grid cells over each threshold
+
+        Parameter
+        --------
+        thresh: iterable, of threholds to use
+        print_out: bool, print output
+        return_dict: return a dictionary of
+
+        Returns
+        -------
+        if return_dict:
+            dict: thresholds as keys and values ngrid cells > thresh
+        '''
         area = {}
         for n in thresh:
-            area.update({n: (self.FC_grid>=n).sum()})
+            area.update({n: (self.FC_grid >= n).sum()})
         if print_out:
             print('\n'.join([('Area exceeding {thresh} strikes: {area} '
                               'km^2').format(thresh=n, area=area[n]) for
-                              n in thresh]))
+                             n in thresh]))
         if return_dict:
-            return(area)
+            return area
 
     def get_daily_grid_slices(self, t, base=12, **kwargs):
         '''
@@ -249,10 +266,10 @@ class Region:
         t: str or pd.Timestamp indicating date
         base: int indicating hours between which to take day - 12
         freq: str indicating frequency as in pandas - '5min'
-        filter_CG: bool indicating whether or not to take only cloud to ground events
-                For new style events uses 'C', 'G' flag, otherwise use strokes where
-                amplitude > 10 or amplitude < 0
-                (after: Cummins et al. 1998 and Orville et al. 2002)
+        filter_CG: False or dict indicating method and args for filtering
+                   method: {'CG', 'range', 'less_than'}
+                   amin: amplitude which CG must exceed (eg. 40)
+                   amax: amplitude which CG must be less than (eg.-10)
 
         Returns
         -------
@@ -271,11 +288,13 @@ class Region:
         end = t+pd.DateOffset(1)
         box, tr = self.get_grid_slices(ds, start, end, **kwargs)
         ds.close()
-        return(box, tr)
+        return box, tr
 
-    def get_grid_slices(self, ds, start=None, end=None, freq='5min', tr=None, filter_CG=False):
+    def get_grid_slices(self, ds, start=None, end=None, freq='5min',
+                        tr=None, filter_CG=False):
         '''
-        For the pre-defined grid, use indicated frequency to also bin along the time dimension
+        For the pre-defined grid, use indicated frequency to also bin along
+        the time dimension
 
         Parameter
         --------
@@ -283,10 +302,10 @@ class Region:
         start: str or pd.Timestamp indicating start time for slices
         end: str or pd.Timestamp indicating end time for slices
         freq: str indicating frequency as in pandas - '5min'
-        filter_CG: bool indicating whether or not to take only cloud to ground events
-                For new style events uses 'C', 'G' flag, otherwise use strokes where
-                amplitude > 10 or amplitude < 0
-                (after: Cummins et al. 1998 and Orville et al. 2002)
+        filter_CG: False or dict indicating method and args for filtering
+                   method: {'CG', 'range', 'less_than'}
+                   amin: amplitude which CG must exceed (eg. 40)
+                   amax: amplitude which CG must be less than (eg.-10)
 
         Returns
         -------
@@ -301,11 +320,11 @@ class Region:
             tr = pd.date_range(start, end, freq=freq)
         d = []
         for i in range(len(tr)-1):
-            grid, _,_ = np.histogram2d(df.lon[tr[i]:tr[i+1]].values,
-                                       df.lat[tr[i]:tr[i+1]].values,
-                                       bins=[self.gridx, self.gridy])
+            grid, _, _ = np.histogram2d(df.lon[tr[i]:tr[i+1]].values,
+                                        df.lat[tr[i]:tr[i+1]].values,
+                                        bins=[self.gridx, self.gridy])
             d.append(grid.T)
-        return(np.stack(d), tr)
+        return np.stack(d), tr
 
     def get_top(self, n=100, base=12, year=None):
         '''
@@ -328,7 +347,7 @@ class Region:
         if not self.SUBSETTED:
             print('This method only works for pre-subsetted regions.')
             return
-        d={}
+        d = {}
         if year is not None:
             start = '{y}-01-01'.format(y=year)
             end = '{y}-12-31'.format(y=year)
@@ -352,10 +371,10 @@ class Region:
             ds = xr.concat([xr.open_dataset(f) for f in little_fnames],
                            dim='record')
             UTC12 = [np.datetime64(t) for t in little_tr]
-            first = ds.isel(record=((ds.time>UTC12[0]) &
-                                    (ds.time<UTC12[1]))).record.shape[0]
-            second = ds.isel(record=((ds.time>UTC12[1]) &
-                                     (ds.time<UTC12[2]))).record.shape[0]
+            first = ds.isel(record=((ds.time > UTC12[0]) &
+                                    (ds.time < UTC12[1]))).record.shape[0]
+            second = ds.isel(record=((ds.time > UTC12[1]) &
+                                     (ds.time < UTC12[2]))).record.shape[0]
             d.update({pd.Timestamp(UTC12[0]): first})
             d.update({pd.Timestamp(UTC12[1]): second})
             ds.close()
@@ -371,36 +390,35 @@ class Region:
 
     def plot_grid(self, grid=None, **kwargs):
         '''
-        Simple and fast plot generation for gridded data
-
-        Parameters
-        ----------
-        grid: np.array with shape matching gridx by gridy
-        ax: matplotlib axes object, if not given generates and populates with basic map
-        cbar: bool indicating whether or not to show default colorbar
-        **kwargs: fed directly into ax.imshow()
-
-        Returns
-        -------
-        im, ax: (output from ax.imshow, matplotlib axes object)
-
-        Benchmarking
-        ------------
-        33.8 ms for 600x600
-        32.9 ms for 60x60
+        Access to plotting.plot_grid
         '''
         if grid is None:
             grid = self.FC_grid
         return plot_grid(self.gridy, self.gridx, grid, **kwargs)
 
     def to_databox(self, box, tr):
-        lon, lat = np.meshgrid(self.gridx[0:-1], self.gridy[0:-1])
+        '''
+        Pass Region object to DataBox
+
+        Parameters
+        ----------
+        box: np.array of shape (ntimesteps, ny, nx)
+        tr: timerange of shape (ntimesteps)
+
+        Returns:
+        DataBox: with lat lon indicating centers of grid cells
+        '''
+        cell_centers_x = pd.Series(self.gridx).rolling(2).mean().values[1:]
+        cell_centers_y = pd.Series(self.gridy).rolling(2).mean().values[1:]
+
+        lon, lat = np.meshgrid(cell_centers_x, cell_centers_y)
         return DataBox(tr, lat, lon, box)
 
     def conditional_rate_of_occurrence(self, ds,
                                        t_window=pd.Timedelta(minutes=15),
                                        symmetric_t_window=False,
-                                       dist_window=20, dim='speed', max_dim=200,
+                                       dist_window=20, dim='speed',
+                                       max_dim=200,
                                        windrose=True, **kwargs):
         '''
         Calculate the conditional rate of occurence
@@ -416,6 +434,12 @@ class Region:
         max_dim: max dim to include in windrose can be set to None
         windrose: bool indicating whether or not to plot windrose
         **kwargs: passed on to windrose function
+
+        Returns
+        -------
+        plot: windrose plot
+        OR
+        df: pandas.Dataframe containing bearing and dim info
         '''
         from geopy.distance import vincenty, great_circle
 
@@ -453,7 +477,8 @@ class Region:
                     dists.append(dist)
                     speeds.append(dist/hours)
                     bearings.append(calculate_bearing(little_loc[0], ll))
-        df = pd.DataFrame({'speed':speeds, 'dist':dists, 'hours': t_diffs, 'direction':bearings})
+        df = pd.DataFrame({'speed': speeds, 'dist': dists, 'hours': t_diffs,
+                           'direction': bearings})
         if dim == 'minutes':
             df = df.assign(minutes=df.hours*60)
         if not windrose:
