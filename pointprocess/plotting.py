@@ -82,8 +82,9 @@ def choose_cmap(pos, neg):
     return(cmap)
 
 def plot_contour(lat, lon, grid, ax=None, extent=None,
-                tiler=StamenTerrain(), zoom=6,
-                N=7, fontsize=10, fmt='%1.1f', **kwargs):
+                 tiler=StamenTerrain(), zoom=6,
+                 N=7, fontsize=10, fmt='%1.1f', add_gridlines=True,
+                 **kwargs):
     if ax is None:
         plt.figure(figsize=(10,8))
         ax = plt.axes(projection=ccrs.PlateCarree())
@@ -104,7 +105,8 @@ def plot_contour(lat, lon, grid, ax=None, extent=None,
     plt.clabel(CS, inline=1, fontsize=fontsize, fmt=fmt)
     if tiler:
         ax.add_image(tiler, zoom)
-    ax = gridlines(ax)
+    if add_gridlines:
+        ax = gridlines(ax)
     return ax
 
 def plot_grid(lat, lon, grid, ax=None, cbar=False, interpolation='None',
